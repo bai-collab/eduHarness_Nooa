@@ -1,7 +1,7 @@
 ---
 name: github-to-cloud-skill-port
 description: >
-  將 GitHub eduHarness Code Edition 的指定 Skill 功能移植、檢查或更新到
+  將 GitHub Canonical Distribution 或使用者明確指定的 legacy Code Edition Skill 功能移植、檢查或更新到
   Google Drive eduHarness Cloud，保留功能意圖與來源追溯，同時把 Code-only
   執行方式改寫成 ChatGPT Web / Gemini Spark 可用的 Cloud workflow。
 ---
@@ -11,8 +11,7 @@ description: >
 ## 定位
 
 這是 eduHarness Cloud 的管理型 meta Skill，不是一般教學 Skill。
-用途是讓 GitHub `bai-collab/eduHarness-` 繼續作為主要功能開發來源，
-再把指定 Skill 的「能力」移植到 Google Drive Cloud Edition。
+預設上游是 Project Kernel 宣告的 `eduHarness_Nooa` Canonical Distribution；舊 `bai-collab/eduHarness-` 只保留為 legacy Code Edition 功能來源，必須由使用者明確指定才讀取。指定 Skill 的「能力」再依 Cloud runtime 做 functional adaptation 後寫入使用者自己的 Google Drive installation。
 
 核心原則：**功能對齊，不做盲目鏡像。**
 
@@ -31,10 +30,11 @@ description: >
 ## 上游與目標
 
 上游：
-- repository: `https://github.com/bai-collab/eduHarness-.git`
-- branch: `main`
-- skill root: `brain/skills`
-- registry: 以 GitHub 現行 registry / router 為實際來源，不依對話記憶猜測。
+- default repository：從 Project Kernel `upstream.repository` resolve（Canonical Distribution）。
+- default branch：從 Project Kernel `upstream.branch` resolve。
+- canonical skill root：依 Canonical Distribution Manifest / Registry 實際宣告解析，不猜路徑。
+- legacy repository：`https://github.com/bai-collab/eduHarness-.git`，僅在使用者明確要求從 Code Edition 移植時使用。
+- registry/router：以所選 GitHub source 的實際 Registry / Manifest 為準，不依對話記憶猜測。
 
 目標：
 - 先讀正式 `00_EDUHARNESS_ENV.yaml`。
@@ -113,6 +113,7 @@ GitHub 無法存取時回報 `⏳ UPSTREAM_UNAVAILABLE`，不得更新 Cloud Ski
 - dependencies
 - safety / human gate
 - runtime assumptions
+- Skill package subresources（references / templates / assets / other required files）
 
 狀態使用：
 
@@ -166,7 +167,7 @@ Cloud Skill 至少包含：
 
 ```yaml
 upstream:
-  repository: "https://github.com/bai-collab/eduHarness-.git"
+  repository: "<verified upstream repository>"
   branch: "main"
   path: "<actual path>"
   commit: "<actual commit if available>"
@@ -199,11 +200,11 @@ cloud:
 
 成功 install/update 時：
 
-1. 將 Cloud Skill 寫入 `00_ADMIN/SKILLS/<skill_id>/SKILL.md`；
+1. 將 Cloud Skill 以完整 folder package 寫入／重建 `00_ADMIN/SKILLS/<skill_id>/`；至少包含 `SKILL.md`，並保留該 Skill 實際依賴的 `references/`、`templates/`、`assets/` 與其他 required subresources；不得只複製 `SKILL.md` 後遺漏其相對路徑依賴。
 2. 更新 `00_ADMIN/00_EDU_SKILL_REGISTRY.yaml`；
 3. 只有新增或變更 Knowledge / Template / Experience / Error Log / Shared Resource 索引時才更新 Brain Index；單純新增或同步 Skill 不修改 Brain Index；
-4. 重新讀取 Skill 與 Registry 驗證；
-5. 執行 portability verification：Skill / Registry 不得包含 installation-specific Google Drive URL、folder ID 或 file ID。若發現 → `PORTABILITY_VIOLATION`，不得宣稱同步完成。
+4. 重新列出並讀取 Skill folder，驗證 `SKILL.md` 與必要 subresources，再讀回 Registry；
+5. 執行 portability verification：掃描整個 Skill package 的文字資源與 Registry，不得包含 installation-specific Google Drive URL、folder ID 或 file ID。若發現 → `PORTABILITY_VIOLATION`，不得宣稱同步完成。
 
 若 Skill 寫入成功但 Registry 失敗：
 
@@ -222,7 +223,7 @@ cloud:
   file: "00_ADMIN/SKILLS/lesson-plan-authoring/SKILL.md"
   source:
     kind: "github-port"
-    repository: "https://github.com/bai-collab/eduHarness-.git"
+    repository: "<verified upstream repository>"
     branch: "main"
     upstream_path: "brain/skills/lesson-plan-authoring/SKILL.md"
     upstream_commit: "<verified commit>"
@@ -258,11 +259,12 @@ cloud:
 - 依賴形成 cycle → `❌ SKILL_DEPENDENCY_CYCLE`。
 - Code 功能在 Cloud 無等價能力且屬核心功能 → 不得宣稱完整移植。
 - 寫入後未能重新讀取驗證 → `⏳ SAVE_UNVERIFIED`。
-- Skill / Registry 含 installation-specific Google Drive locator → `❌ PORTABILITY_VIOLATION`。
+- Skill package 任一 required subresource 遺失 → `❌ SKILL_PACKAGE_INCOMPLETE`。
+- Skill package / Registry 含 installation-specific Google Drive locator → `❌ PORTABILITY_VIOLATION`。
 
 ## 核心規則
 
-**GitHub 是 Canonical Distribution 與主要功能演進來源；Drive 是各使用者的 Cloud runtime installation。所有 installation-specific Google Drive locator 只由正式 ENV 提供。**
+**`eduHarness_Nooa` GitHub 是 Cloud Canonical Distribution；legacy Code Edition repo 只作明確指定的功能移植來源；Drive 是各使用者的 Cloud runtime installation。所有 installation-specific Google Drive locator 只由正式 ENV 提供。**
 
 所謂「同步」是：
 

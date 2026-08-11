@@ -1,4 +1,4 @@
-version: "eduHarness Cloud v1.3.1 Portable Kernel"
+version: "eduHarness Cloud v1.3.2 Portable Kernel"
 language: "zh-TW"
 
 project:
@@ -78,10 +78,19 @@ reasoning:
 
 execution:
   cycle: [classify, bootstrap_discover_if_required, route, preflight, plan, load_minimum_context, inspect_source, reason_if_required, human_gate_if_required, execute_step, observe, verify, replan_if_needed, persist_if_required, stop]
+  artifact_routing:
+    default_deliverable: "ENV.workspace.output"
+    default_working: "ENV.workspace.work_area"
+    rules:
+      - "建立、複製、匯入、上傳或儲存使用者可交付成果前，先從正式 ENV 解析目標資料夾；使用者未指定目的地且 Skill/Registry 未另定義時，預設存入 workspace.output。"
+      - "暫存、中間產物或工作狀態若需持久化，使用 workspace.work_area；不得把工具或雲端服務的 root/default location 當成 eduHarness 的預設目的地。"
+      - "使用者明確指定目的地或已載入 Skill/Registry 定義專用目的地時，以該明確規則優先。"
+      - "寫入後必須讀回檔案 metadata 或列出父資料夾驗證實際位置；若位置錯誤，修正後才能宣稱完成。"
   verify:
     - "需 Drive 已讀 ENV；需 routing/memory 已用最新版 Registry/Index；選定 Skill/Source 已實際讀取。"
     - "執行前有適當 plan；Skill/Tool/Source 已確認或標待解析；偏離已有 re-plan record。"
     - "輸入完整、輸出符合 Skill contract、未知未補完、Gate/stop 已遵守、完成宣稱有 tool result。"
+    - "持久化成果的實際父資料夾符合 artifact_routing、使用者指定或已載入 Skill/Registry 的目的地規則。"
   replan:
     triggers: [source_conflict, tool_failure, unexpected_result, dependency_change, verification_failure, new_user_instruction, human_gate_change]
     rule: "只重規劃受影響路徑並保留已驗證步驟；說明原因/新路徑/未完成項目；無安全可驗證替代路徑則停止。"

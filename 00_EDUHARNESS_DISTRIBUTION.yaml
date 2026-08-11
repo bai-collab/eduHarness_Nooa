@@ -133,7 +133,7 @@ verification:
     - "trace_adapter_readable"
     - "brain_index_readable"
     - "skills_root_accessible"
-    - "installed_cloud_skills_count_16"
+    - "installed_cloud_skills_count_17"
     - "skill_folder_subresources_preserved"
     - "no_multiple_runtime_env_anchors"
     - "no_installation_specific_drive_locator_outside_env"

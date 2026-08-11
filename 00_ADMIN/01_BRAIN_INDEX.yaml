@@ -16,6 +16,14 @@ sections:
   knowledge_base:
     path: "10_KNOWLEDGE_BASE"
     purpose: "經驗證、可跨任務重用的教育知識與規則"
+    managed_resources:
+      curriculum_standards:
+        path: "10_KNOWLEDGE_BASE/課綱_各領域"
+        index: "10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md"
+        ownership: "distribution-managed"
+        loading: "on-demand"
+        scope: "relevant-domain-only"
+        purpose: "教案設計時依領域與學習階段按需載入的課綱參考來源"
 
   templates:
     path: "20_TEMPLATES"
@@ -58,6 +66,8 @@ meta_skills:
     purpose: "從 Canonical Distribution 同步 Cloud Skill，或依使用者明確要求從 legacy Code Edition 移植/更新"
 
 index_rules:
+  - "課綱正式索引為 10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md；教案工作先依領域與學習階段選擇必要課綱，不預載全部領域。"
+  - "10_KNOWLEDGE_BASE/課綱_各領域 為 Distribution-managed curriculum resource；同一 Knowledge Base 內其他教師自訂內容仍屬 user-owned，不得因一般升級被覆寫。"
   - "新增 Skill 後，正式身份以 00_EDU_SKILL_REGISTRY.yaml 為準。"
   - "單純新增或同步 Skill 不更新本索引；新增 knowledge / template / experience / error / shared resource 索引時才更新。"
   - "所有 installation-specific Google Drive locator 只由正式 ENV 提供；本 Index 只保存相對 path / logical reference。"

@@ -96,9 +96,10 @@ eduHarness_Nooa/
 - 不替換正式 ENV。
 - 不覆寫老師的 user-owned Knowledge / Experience / Workspace / Output。
 - 可更新 Distribution-managed `10_KNOWLEDGE_BASE/課綱_各領域`，但不能把整個 Knowledge Base 當成 overwrite 單位。
-- 先 snapshot 受管理的 Registry / Brain Index / runtime contracts / Skill packages / curriculum resources。
+- Brain Index 預設保留；若缺少 curriculum entry，只允許依 Manifest 做 additive migration，不能整份以 canonical Brain Index 覆寫 local index。
+- 先 snapshot 受管理的 Registry / runtime contracts / Skill packages / curriculum resources；若需 Brain Index migration，也先 snapshot local Brain Index。
 - 顯示 upgrade scope 與 rollback plan。
-- 在 managed production overwrite 前取得 Human Gate。
+- 在 managed production overwrite / Brain Index migration 前取得 Human Gate。
 - 更新後重新由原 ENV bootstrap 驗證；失敗就 rollback managed resources。
 
 完整升級規則見 `docs/INSTALL_UPGRADE.md`。
@@ -109,6 +110,7 @@ eduHarness_Nooa/
 - Distribution 不能包含私人 Brain、學生個資、tokens、cookies、credentials、private keys。
 - Skill 更新以完整 package 為單位，不能只更新 `SKILL.md` 而漏掉 references/templates/assets。
 - 課綱更新只限 Distribution-managed curriculum subtree；不得覆寫其他教師 Knowledge。
+- Brain Index migration 必須保留既有 entries；無法可靠 additive merge 時停止。
 - 既有 production managed resources 的覆寫、批次搬移、rollback 都需 Human Gate。
 - 工具沒有實際成功並 read-back 時，不得宣稱安裝或升級完成。
 
@@ -129,6 +131,7 @@ eduHarness_Nooa/
 - `INSTALL_ENV_INVALID`
 - `EDU_REGISTRY_UNAVAILABLE`
 - `BRAIN_INDEX_UNAVAILABLE`
+- `BRAIN_INDEX_MIGRATION_FAILED`
 - `CURRICULUM_RESOURCE_INCOMPLETE`
 - `SKILL_PACKAGE_INCOMPLETE`
 - `UPGRADE_PREFLIGHT_FAILED`
@@ -141,6 +144,6 @@ eduHarness_Nooa/
 
 `INSTALLATION_READY`
 
-升級則只有 user-owned Knowledge / preserve set 未被破壞、managed resources（含 curriculum subtree）全部更新且重新 bootstrap PASS，才可回報：
+升級則只有 user-owned Knowledge / local Brain Index 既有 entries / preserve set 未被破壞、managed resources（含 curriculum subtree）全部更新且重新 bootstrap PASS，才可回報：
 
 `UPGRADE_READY`

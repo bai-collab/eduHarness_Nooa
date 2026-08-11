@@ -16,16 +16,15 @@ environment_contract:
     再由 ENV.workspace.registry 找到本 Registry。
 
 source_contract:
-  cloud_distribution_repository: "https://github.com/bai-collab/eduHarness_Nooa.git"
-  cloud_distribution_branch: "main"
   cloud_runtime_ssot: "Google Drive installation resolved from ENV"
-  code_skill_upstream_repository: "https://github.com/bai-collab/eduHarness-.git"
-  code_skill_upstream_branch: "main"
-  code_skill_upstream_root: "brain/skills"
+  canonical_distribution_repository: "https://github.com/bai-collab/eduHarness_Nooa.git"
+  legacy_code_repository: "https://github.com/bai-collab/eduHarness-.git"
+  upstream_branch: "main"
+  canonical_skill_root: "00_ADMIN/SKILLS"
+  legacy_skill_root: "brain/skills"
   rule: >
-    eduHarness_Nooa GitHub repository 是 Cloud Canonical Distribution；Google Drive 是各 installation 的 Cloud runtime。
-    Code Edition Skill 的功能演進可來自 bai-collab/eduHarness-，經 functional adaptation 後進入 Cloud Distribution 與各 installation。
-    Cloud Skill 不要求與 Code Edition Skill 逐字相同，但相同能力優先保留相同 skill_id。
+    `eduHarness_Nooa` GitHub 是 Cloud Canonical Distribution；legacy `eduHarness-` 只保留 Code Edition provenance / 明確移植來源。
+    Cloud Skill 保存各 installation 的 runtime 可執行版本；不要求與 legacy Code Skill 逐字相同，但相同能力優先保留相同 skill_id。
 
 routing_policy:
   unknown_skill_action: "stop"
@@ -59,6 +58,12 @@ skill_port_policy:
   auto_batch_sync_allowed: false
   auto_overwrite_allowed: false
   update_registry_after_success: true
+  update_brain_index_for_skill_only: false
+  portability_verification_required: true
+  installation_specific_drive_locator_allowed_outside_env: false
+  skill_package_unit: "folder"
+  preserve_required_subresources: true
+  package_verification: "SKILL.md + referenced references/templates/assets/other required files"
 
 skills:
   - id: "cloud-bootstrap"
@@ -95,7 +100,7 @@ skills:
     type: "meta"
     file: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"
     purpose: >
-      將 GitHub eduHarness Code Edition 的指定 Skill 功能移植、比較或更新到
+      預設從 `eduHarness_Nooa` Canonical Distribution 同步指定 Skill；若使用者明確指定 legacy Code Edition，則做 functional adaptation 後移植到
       Google Drive Cloud Edition，並針對 ChatGPT Web / Gemini Spark runtime 重新適配。
     trigger:
       - "同步 GitHub skill"

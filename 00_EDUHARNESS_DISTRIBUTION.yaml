@@ -53,6 +53,15 @@ resources:
   trace_adapter: {type: file, source: "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml", destination: "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml", required: true, install_action: copy}
   skills: {type: folder, source: "00_ADMIN/SKILLS", destination: "00_ADMIN/SKILLS", required: true, install_action: reconstruct}
   knowledge_base: {type: folder, destination: "10_KNOWLEDGE_BASE", required: true, install_action: create}
+  curriculum_standards:
+    type: folder
+    source: "10_KNOWLEDGE_BASE/課綱_各領域"
+    destination: "10_KNOWLEDGE_BASE/課綱_各領域"
+    required: true
+    install_action: reconstruct
+    ownership: "distribution-managed"
+    loading: "on-demand-relevant-domain-only"
+    index: "10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md"
   templates: {type: folder, destination: "20_TEMPLATES", required: true, install_action: create}
   experience: {type: folder, destination: "30_EXPERIENCE", required: true, install_action: create}
   error_log: {type: folder, destination: "40_ERROR_LOG", required: true, install_action: create}
@@ -81,11 +90,11 @@ upgrade_contract:
   snapshot:
     required_before_replace: true
     destination: "ENV.workspace.work_area"
-    scope: [registry, runtime_contracts, managed_skill_packages]
+    scope: [registry, runtime_contracts, managed_skill_packages, managed_curriculum_resources]
   preserve:
     - "00_EDUHARNESS_ENV.yaml"
     - "01_BRAIN_INDEX.yaml unless explicit schema migration is required"
-    - "10_KNOWLEDGE_BASE"
+    - "10_KNOWLEDGE_BASE user-owned content outside distribution-managed curriculum resources"
     - "20_TEMPLATES user content"
     - "30_EXPERIENCE"
     - "40_ERROR_LOG"
@@ -100,17 +109,20 @@ upgrade_contract:
     - "00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml"
     - "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml"
     - "distribution-managed Skill packages"
+    - "10_KNOWLEDGE_BASE/課綱_各領域"
   verify:
     - "fresh bootstrap from unchanged local ENV"
     - "Registry schema=2 and routing guard contract=2.1"
     - "all Registry Skill targets resolve"
     - "State Builder and observability references resolve"
+    - "curriculum index and all required domain curriculum resources resolve"
+    - "user-owned Knowledge outside distribution-managed curriculum resources is preserved"
     - "no installation-specific locator leaked from Distribution"
   rollback:
     trigger: "any verification failure"
     action: "restore only managed resources from snapshot; preserve ENV and user data"
   human_gate:
-    required_before: ["replace managed production files", "bulk Skill package overwrite", "rollback overwrite"]
+    required_before: ["replace managed production files", "bulk Skill package overwrite", "managed curriculum overwrite", "rollback overwrite"]
 
 distribution_privacy:
   never_distribute:
@@ -135,6 +147,11 @@ verification:
     - "skills_root_accessible"
     - "installed_cloud_skills_count_17"
     - "skill_folder_subresources_preserved"
+    - "curriculum_resource_root_exists"
+    - "curriculum_index_readable"
+    - "curriculum_domain_count_11"
+    - "curriculum_required_resources_resolve"
+    - "user_owned_knowledge_preserved"
     - "no_multiple_runtime_env_anchors"
     - "no_installation_specific_drive_locator_outside_env"
   ready_state: "INSTALLATION_READY"
@@ -150,6 +167,7 @@ failure:
   env_invalid: "INSTALL_ENV_INVALID"
   registry_unavailable: "EDU_REGISTRY_UNAVAILABLE"
   brain_index_unavailable: "BRAIN_INDEX_UNAVAILABLE"
+  curriculum_resource_incomplete: "CURRICULUM_RESOURCE_INCOMPLETE"
   write_failed: "SAVE_FAILED"
   skill_package_incomplete: "SKILL_PACKAGE_INCOMPLETE"
   verification_failed: "SAVE_UNVERIFIED"

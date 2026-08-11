@@ -1,0 +1,182 @@
+schema_version: 1
+manifest_kind: "eduHarness-distribution"
+status: "active"
+
+distribution:
+  id: "eduHarness_Nooa"
+  name: "eduHarness_Nooa"
+  edition: "cloud"
+  version: "0.1.0"
+  channel: "stable"
+  description: >
+    eduHarness Cloud 的 Canonical Distribution Manifest；正式散布來源為 Project Kernel 宣告的官方 GitHub upstream。
+    使用者應透過 cloud-bootstrap 將必要資源建立到自己的 Google Drive installation，
+    不直接把本 Distribution 當作 runtime workspace。
+
+compatibility:
+  installation_env_kind: "eduHarness-cloud"
+  installation_edition: "cloud"
+  runtime_targets:
+    - chatgpt_web
+    - gemini_spark
+
+distribution_contract:
+  source_mode: "github-canonical-read-only"
+  rules:
+    - "Distribution 與 Installation 是不同 resource scope。"
+    - "一般使用者不得修改 upstream Distribution。"
+    - "cloud-bootstrap 必須在 authenticated user's workspace 建立 Installation。"
+    - "Distribution resource locator 不代表使用者具有寫入權限。"
+    - "不得將 Distribution 的正式 ENV 直接當成使用者正式 ENV。"
+    - "不得保存 secrets、tokens、cookies、credentials、private keys 或學生個資。"
+
+installation:
+  default_root_name: "eduHarness_Nooa"
+  installer_skill: "cloud-bootstrap"
+  strategy: "reconstruct-from-manifest"
+  existing_root_policy: "inspect-before-write"
+  overwrite_policy: "human-gate"
+
+upstream:
+  source: "project-kernel"
+  repository_field: "upstream.repository"
+  branch_field: "upstream.branch"
+  rule: "Canonical Distribution 從 Project Kernel 宣告的 GitHub upstream 解析；教師只提供自己的 Google Drive root。"
+
+resources:
+  project_kernel:
+    type: "file"
+    source: "00_PROJECT_INSTRUCTIONS.yaml"
+    required: true
+    install_action: "manual-project-instructions"
+    instruction: "教師先建立 ChatGPT Web Project，將本檔全文原封不動貼入 Project Instructions，再執行 Cloud installation 指令。"
+
+  env_template:
+    type: "file"
+    source: "00_EDUHARNESS_ENV_TEMPLATE.yaml"
+    required: true
+    install_action: "generate-env"
+
+  registry:
+    type: "file"
+    source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+    destination: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+    required: true
+    install_action: "copy"
+
+  brain_index:
+    type: "file"
+    source: "00_ADMIN/01_BRAIN_INDEX.yaml"
+    destination: "00_ADMIN/01_BRAIN_INDEX.yaml"
+    required: true
+    install_action: "copy"
+
+  skills:
+    type: "folder"
+    source: "00_ADMIN/SKILLS"
+    destination: "00_ADMIN/SKILLS"
+    required: true
+    install_action: "reconstruct"
+
+  knowledge_base:
+    type: "folder"
+    destination: "10_KNOWLEDGE_BASE"
+    required: true
+    install_action: "create"
+
+  templates:
+    type: "folder"
+    destination: "20_TEMPLATES"
+    required: true
+    install_action: "create"
+
+  experience:
+    type: "folder"
+    destination: "30_EXPERIENCE"
+    required: true
+    install_action: "create"
+
+  error_log:
+    type: "folder"
+    destination: "40_ERROR_LOG"
+    required: true
+    install_action: "create"
+
+  work_area:
+    type: "folder"
+    destination: "50_WORKSPACE"
+    required: true
+    install_action: "create"
+
+  shared_resources:
+    type: "folder"
+    destination: "80_SHARED_RESOURCES"
+    required: true
+    install_action: "create"
+
+  output:
+    type: "folder"
+    destination: "90_OUTPUT"
+    required: true
+    install_action: "create"
+
+  review_later:
+    type: "folder"
+    destination: "98_REVIEW_LATER"
+    required: true
+    install_action: "create"
+
+  archive:
+    type: "folder"
+    destination: "99_ARCHIVE"
+    required: true
+    install_action: "create"
+
+env_generation:
+  output_file: "00_EDUHARNESS_ENV.yaml"
+  env_kind: "eduHarness-cloud"
+  resolve:
+    drive_root: "installed-root"
+  workspace:
+    admin: "00_ADMIN"
+    registry: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+    brain_index: "00_ADMIN/01_BRAIN_INDEX.yaml"
+    skills: "00_ADMIN/SKILLS"
+    knowledge_base: "10_KNOWLEDGE_BASE"
+    templates: "20_TEMPLATES"
+    experience: "30_EXPERIENCE"
+    error_log: "40_ERROR_LOG"
+    work_area: "50_WORKSPACE"
+    shared_resources: "80_SHARED_RESOURCES"
+    output: "90_OUTPUT"
+    review_later: "98_REVIEW_LATER"
+    archive: "99_ARCHIVE"
+
+verification:
+  required:
+    - "installed_env_exists"
+    - "installed_env_schema_valid"
+    - "installed_env_points_to_local_root"
+    - "registry_readable"
+    - "brain_index_readable"
+    - "skills_root_accessible"
+    - "required_resources_present"
+    - "no_multiple_runtime_env_anchors"
+    - "private_brain_not_copied"
+    - "project_kernel_available_for_manual_install"
+    - "no_installation_specific_drive_locator_outside_env"
+  ready_state: "INSTALLATION_READY"
+
+failure:
+  distribution_not_found: "DISTRIBUTION_NOT_FOUND"
+  distribution_invalid: "DISTRIBUTION_INVALID"
+  source_missing: "SOURCE_UNAVAILABLE"
+  runtime_incompatible: "RUNTIME_INCOMPATIBLE"
+  install_root_exists: "INSTALL_ROOT_EXISTS"
+  env_ambiguous: "ENV_AMBIGUOUS"
+  env_generation_failed: "INSTALL_ENV_GENERATION_FAILED"
+  env_invalid: "INSTALL_ENV_INVALID"
+  registry_unavailable: "EDU_REGISTRY_UNAVAILABLE"
+  brain_index_unavailable: "BRAIN_INDEX_UNAVAILABLE"
+  write_failed: "SAVE_FAILED"
+  verification_failed: "SAVE_UNVERIFIED"

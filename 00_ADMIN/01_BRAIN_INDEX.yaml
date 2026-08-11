@@ -1,0 +1,60 @@
+version: 1
+name: "eduHarness Cloud Brain Index"
+
+root_source: "ENV.workspace.drive_root"
+
+sections:
+  admin:
+    path: "00_ADMIN"
+    items:
+      - "00_PROJECT_INSTRUCTIONS.yaml — Cloud Harness 全域治理與 runtime contract"
+      - "00_EDU_SKILL_REGISTRY.yaml — Cloud Skill routing 的唯一正式 Registry"
+      - "01_BRAIN_INDEX.yaml — 本索引"
+      - "SKILLS/ — Cloud Skill 正式執行版本"
+      - "SKILLS/_META/ — Skill 管理、移植、維護類 meta Skill"
+
+  knowledge_base:
+    path: "10_KNOWLEDGE_BASE"
+    purpose: "經驗證、可跨任務重用的教育知識與規則"
+
+  templates:
+    path: "20_TEMPLATES"
+    purpose: "教案、評量、文件與輸出模板"
+
+  experience:
+    path: "30_EXPERIENCE"
+    purpose: "已驗證、可重用的工作方法與判斷經驗"
+
+  error_log:
+    path: "40_ERROR_LOG"
+    purpose: "已確認失敗、根因與 Do Not Repeat"
+
+  workspace:
+    path: "50_WORKSPACE"
+    purpose: "進行中與一次性工作檔"
+
+  shared_resources:
+    path: "80_SHARED_RESOURCES"
+    purpose: "跨 Skill 共用且不屬於正式 knowledge 的資源"
+
+  output:
+    path: "90_OUTPUT"
+    purpose: "完成後的正式交付物"
+
+  review_later:
+    path: "98_REVIEW_LATER"
+    purpose: "待人工判斷、尚未正式納入的內容"
+
+  archive:
+    path: "99_ARCHIVE"
+    purpose: "已淘汰、舊版或不再使用但需保留追溯的內容"
+
+meta_skills:
+  - id: "edu:github-to-cloud-skill-port"
+    path: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"
+    purpose: "從 GitHub Code Edition 移植/更新 Cloud Skill"
+
+index_rules:
+  - "新增 Skill 後，正式身份以 00_EDU_SKILL_REGISTRY.yaml 為準。"
+  - "新增 knowledge / experience / error 項目後才更新本索引。"
+  - "搜尋到檔名不代表已讀取內容；執行前仍需實際讀取檔案全文。"

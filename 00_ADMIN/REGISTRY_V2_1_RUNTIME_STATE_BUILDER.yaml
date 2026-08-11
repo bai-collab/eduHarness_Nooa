@@ -1,0 +1,101 @@
+schema_version: "2.1-runtime-state-builder"
+registry_schema_major: 2
+routing_guard_contract_version: "2.1"
+status: active
+runtime_ssot: true
+kernel_contract:
+  canonical_required: "eduHarness Cloud v1.4.1 Compact Portable Kernel"
+
+inputs:
+  accepted_evidence_sources: [user_input, skill_output, tool_result, runtime_state, inference]
+  evidence_record:
+    required: [fact, value, source, provenance_ref]
+
+state_model:
+  key_point_state:
+    required: [value, status, source]
+    status_values: [confirmed, inferred, unknown, conflict]
+  truth_projection:
+    confirmed: "typed value may resolve guard TRUE or FALSE"
+    inferred: UNKNOWN
+    unknown: UNKNOWN
+    conflict: UNKNOWN
+  null_contract:
+    confirmed_null: invalid
+    unknown_value: null
+    conflict_value: null
+
+resolution_algorithm:
+  - "collect only evidence relevant to registered KeyPoints"
+  - "normalize explicit statements without inventing unstated values"
+  - "validate KeyPoint id/type/enum/provenance"
+  - "reconcile current direct evidence for same fact/scope"
+  - "assign confirmed/inferred/unknown/conflict"
+  - "emit one state per relevant KeyPoint; omitted facts are UNKNOWN, never false"
+
+normalization_policy:
+  semantic_normalization_is_not_inference: true
+  boolean_false_rule: "false requires positive confirmation; lack of mention is UNKNOWN"
+
+key_points:
+  source.lesson.exists: {type: boolean}
+  source.lesson.type: {type: string}
+  source.material.exists: {type: boolean}
+  source.quest_spec.exists: {type: boolean}
+  source.image.exists: {type: boolean}
+  source.image.single: {type: boolean}
+  source.web_game.exists:
+    type: boolean
+    semantic_name: existing_web_game_baseline_exists
+    note: "readable existing Web game spec OR implementation confirms true"
+  source.conjecturing_lesson.ready:
+    type: boolean
+    confirmed_sources: [skill_output, tool_result]
+    note: "validated missing facilitation structure may confirm false; source conflict is conflict/UNKNOWN"
+  task.intent:
+    type: enum
+    allowed_values: [lesson_plan_authoring, lesson_differentiation, item_authoring, quest_game_design, student_facilitation, conjecturing_lesson_design, threejs_adoption, image_to_3d_scene, visual_art_design, storyboard_design]
+    confirmed_sources: [user_input]
+    rule: "supporting subtasks must not be promoted to Primary intent"
+  output.complete_lesson_plan: {type: boolean}
+  output.game_spec: {type: boolean}
+  output.web_implementation:
+    type: boolean
+    rule: "false only when specification-only/no Web implementation is explicit; omission is UNKNOWN"
+
+runtime_interface:
+  before_selection: "build from user input and already-available facts"
+  after_provisional_selection: "resolve entry-route KeyPoints from selected source/tool checks"
+  after_handoff: "recompute only affected KeyPoints"
+  before_requires_enhances: "freeze converged Primary; supporting capability cannot rewrite task.intent"
+  post_execution: "recompute only changed facts; then evaluate post_execution routes"
+
+route_evaluator_contract:
+  accepted_truth: [TRUE, FALSE, UNKNOWN]
+  automatic_handoff_requires: TRUE
+  unknown_action: keep_current_primary_and_emit_diagnostic
+  false_action: keep_current_primary
+  inferred_never_activates_handoff: true
+  conflict_never_activates_handoff: true
+  missing_never_becomes_false: true
+
+loop_state_signature:
+  fields: [current_primary_skill, relevant_route_key_points]
+  rule: "same node + materially same relevant state => SKILL_ROUTE_LOOP"
+  max_route_hops_source: registry
+
+responsibility_boundaries:
+  R04: "no source lesson alone cannot transfer responsibility; complete lesson output must also be true"
+  R06: "recommendation only; automatic handoff false"
+  R11: "missing quest spec requires confirmed material.exists=true"
+  R13: "existing readable Web spec OR implementation + threejs_adoption"
+  R16: "game_spec=true AND web_implementation=false; modality does not decide responsibility"
+  R17: "readiness=false AND conjecturing_lesson_design; source conflict remains UNKNOWN"
+
+validation_contract:
+  - "all emitted KeyPoint IDs exist in Registry"
+  - "values match declared type and enum"
+  - "confirmed + null invalid"
+  - "boolean false has positive evidence"
+  - "UNKNOWN is not coerced to FALSE"
+  - "inferred/conflict never cause automatic handoff"

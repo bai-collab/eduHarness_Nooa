@@ -1,0 +1,104 @@
+schema_version: "1.0"
+contract: "eduHarness Runtime Audit Trace"
+status: active
+runtime_ssot: true
+
+scope:
+  registry_schema_major: 2
+  routing_guard_contract_version: "2.1"
+  runtime_targets: [chatgpt_web, gemini_spark]
+  purpose: "Record auditable routing/execution decisions without storing private chain-of-thought."
+
+principles:
+  - "Record only externally auditable state transitions, evidence, guard results, actions and verification outcomes."
+  - "Do not store private chain-of-thought, hidden reasoning, secrets, credentials or student PII."
+  - "UNKNOWN must remain UNKNOWN; absence of evidence must not be serialized as false."
+  - "Every route evaluation must be reconstructable against the exact Registry revision used at runtime."
+  - "Final Primary Skill retains its stopping, Human Gate, output and verification authority."
+
+trace_identity:
+  required: [trace_id, started_at, runtime_target, task_scope_id]
+  trace_id_rule: "opaque; must not encode user/student identity"
+
+version_pins:
+  required: [kernel_version, registry_revision, registry_schema_version, routing_guard_contract_version, state_builder_revision, state_builder_schema_version]
+  rule: "Historical traces must be interpreted against their pinned Registry revision."
+
+input_record:
+  required: [provenance_ref, input_summary, sensitivity]
+  sensitivity_values: [normal, restricted, prohibited]
+  rules:
+    - "Prefer minimal semantic summary + provenance over raw input."
+    - "Student identifiers, credentials, secrets, private keys and tokens are prohibited."
+
+selection_event:
+  required: [provisional_primary, selection_basis, evidence_refs]
+
+key_point_event:
+  required: [key_point_id, value, status, source, provenance_refs]
+  status_values: [confirmed, inferred, unknown, conflict]
+  source_values: [user_input, skill_output, tool_result, runtime_state, inference]
+  rules:
+    - "confirmed + null invalid"
+    - "unknown/conflict default null"
+    - "inferred/conflict evaluate UNKNOWN"
+    - "boolean false requires positive evidence"
+
+route_evaluation_event:
+  required: [registry_revision, from_skill, evaluation, route_ordinal, to_skill, mode, guard_truth, key_points_used, action]
+  evaluation_values: [entry, post_execution]
+  mode_values: [handoff, recommendation]
+  guard_truth_values: [TRUE, FALSE, UNKNOWN]
+  action_values: [handoff, retain_primary, recommend_only, stop_loop, stop_invalid_route]
+  route_locator_rule: "registry_revision + from_skill + evaluation + route_ordinal + to_skill"
+  rules:
+    - "handoff only when TRUE and mode=handoff"
+    - "recommendation never changes Primary"
+    - "UNKNOWN retains Primary and emits diagnostic"
+    - "FALSE retains Primary"
+
+handoff_event:
+  required: [from_skill, to_skill, route_locator, hop_number, state_changed]
+
+convergence_event:
+  required: [final_primary, route_hops, convergence_status, loop_signature_checked]
+  convergence_status_values: [converged, stopped_loop, stopped_invalid_graph, stopped_missing_capability]
+
+relation_event:
+  required: [relation_type, owner_skill, target_skill, action]
+  relation_type_values: [requires, enhances, routes, conflicts, replaces, supports]
+  action_values: [loaded, skipped, blocked, informational, handoff]
+  rule: "supporting capability cannot rewrite task.intent or Primary responsibility"
+
+skill_takeover_event:
+  required: [primary_skill, skill_source_ref, full_text_read, stopping_state, human_gate_state, output_state]
+  human_gate_state_values: [not_required, pending, approved, denied, blocked]
+  stopping_state_values: [continue, intake_only, intake_gap, stopped, completed]
+  rule: "full_text_read must be true before substantive Skill execution"
+
+verification_event:
+  required: [checks, outcome]
+  outcome_values: [PASS, PASS_WITH_DEFERRED, FAIL, BLOCKED]
+
+trace_result:
+  required: [final_primary, final_status, diagnostics, production_state_modified]
+  final_status_values: [completed, safely_stopped, blocked, failed]
+
+privacy_and_retention:
+  prohibited_fields: [private_chain_of_thought, hidden_reasoning, student_identifiers, credentials, secrets, tokens, private_keys]
+  rules:
+    - "Use minimum necessary evidence and redact nonessential identifiers."
+    - "One-off traces are working state and are not automatically promoted to Brain/Experience/Error Log."
+    - "Longer retention requires a separate reusable-knowledge decision and applicable Human Gate."
+
+validation_contract:
+  - "all version pins present"
+  - "referenced KeyPoints exist in pinned Registry"
+  - "route locators resolve in pinned Registry"
+  - "guard truth/action combination legal"
+  - "UNKNOWN not coerced to FALSE"
+  - "recommendation never changes Primary"
+  - "route hop count and loop signature comply with Registry"
+  - "final Primary Skill full text read before execution"
+  - "Skill stopping/Human Gate contract preserved"
+  - "no prohibited privacy fields persisted"

@@ -5,7 +5,7 @@
 ## 一句話版本
 
 - **第一次安裝**：老師建立空白 Google Drive root → 建立 ChatGPT Project → 把 `00_PROJECT_INSTRUCTIONS.yaml` 貼入 Project Instructions → 對 ChatGPT 說「安裝 eduHarness Cloud，這是我的 Drive root：...」。
-- **之後升級**：不用重貼 Project Instructions。直接在原 Project 說「升級 eduHarness Cloud 到最新版」，系統會讀本機 ENV、檢查 GitHub Distribution、建立 snapshot、顯示影響範圍、取得 Human Gate 後，只更新受管理的 runtime files / Skills / curriculum resources。
+- **之後升級**：不用重貼 Project Instructions。直接在原 Project 說「升級 eduHarness Cloud 到最新版」，系統會讀本機 ENV、檢查 GitHub Distribution、建立 snapshot、顯示影響範圍、取得 Human Gate 後，只更新受管理的 runtime files / Skills / curriculum resources；Brain Index 只有在 Manifest 明確要求且 entry 缺失時才做 additive migration。
 
 ## 為什麼一般升級不用重貼 Project Instructions？
 
@@ -45,7 +45,7 @@
    - Runtime State Builder / guard contract 2.1
    - Audit Trace Contract
    - Runtime Trace Adapter
-   - Brain Index
+   - 最新 portable Brain Index
    - 完整 Skill packages
    - `10_KNOWLEDGE_BASE/課綱_各領域/**`
 6. 依老師的 Drive root 產生正式 `00_EDUHARNESS_ENV.yaml`。
@@ -67,14 +67,16 @@
 3. 讀 GitHub stable Distribution Manifest。
 4. 做 Kernel compatibility preflight。
 5. 比對 managed resources。
-6. 對會被覆寫的 Registry / Brain Index / runtime contracts / Skill packages / curriculum resources 建 rollback snapshot 到 `ENV.workspace.work_area`。
-7. 顯示此次 upgrade scope、保留項目與 rollback plan。
-8. 在 managed production overwrite 前取得 Human Gate。
+6. 對會被覆寫的 Registry / runtime contracts / Skill packages / curriculum resources 建 rollback snapshot 到 `ENV.workspace.work_area`。
+7. 若 Manifest 宣告 Brain Index migration 且 local index 缺少必要 entry，另 snapshot local Brain Index，準備 additive migration。
+8. 顯示此次 upgrade scope、保留項目、Brain Index migration scope 與 rollback plan。
+9. 在 managed production overwrite / Brain Index migration 前取得 Human Gate。
 
 ## 升級時會保留什麼？
 
 預設不碰：
 - `00_EDUHARNESS_ENV.yaml`
+- local Brain Index 的既有 entries；僅允許 Manifest 明確宣告的 additive migration entry
 - `10_KNOWLEDGE_BASE` 中 `課綱_各領域` 以外的 user-owned Knowledge
 - 老師的 Experience / Error Log
 - 老師自己累積的 Templates
@@ -84,21 +86,20 @@
 - `98_REVIEW_LATER`
 - `99_ARCHIVE`
 
-Brain Index 可隨 Distribution 更新 portable index 定義，但不得帶入 installation-specific locator、私人 Brain 內容或教師資料。
-
 ## 升級時會更新什麼？
 
 Distribution-managed resources：
 - `00_ADMIN/00_EDU_SKILL_REGISTRY.yaml`
-- `00_ADMIN/01_BRAIN_INDEX.yaml` 的 portable index
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml`
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml`
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
 - `00_ADMIN/SKILLS/**`
 - `10_KNOWLEDGE_BASE/課綱_各領域/**`
+- Manifest 明確宣告的 portable Brain Index additive migration entry
 
 Skill 以完整 package 為單位同步，不允許只更新 `SKILL.md` 卻漏掉 references/templates/assets。
 課綱只允許更新 Distribution-managed subtree，不允許以整個 `10_KNOWLEDGE_BASE` 為覆寫單位。
+Brain Index 不以 canonical file 全量覆寫 existing installation；migration 必須 additive merge 並保留既有 entries。
 
 ## 升級驗證
 
@@ -110,19 +111,21 @@ Skill 以完整 package 為單位同步，不允許只更新 `SKILL.md` 卻漏�
 - Audit Trace Contract / Trace Adapter 可讀
 - installed Skills 數量符合 Distribution Manifest
 - Brain Index 可解析 `課綱_各領域/README_課綱索引.md`
+- 若有 Brain Index migration，migration 前既有 entries 全部仍存在
 - curriculum index 與 Manifest 要求的 11 個領域／總綱檔案可讀
 - user-owned Knowledge 沒被覆寫
 - 其他 user data 沒被覆寫
 - installation-specific Drive locator 沒有跑到 ENV 以外
 
-任何一項 FAIL → 使用 snapshot rollback managed resources（含 managed curriculum subtree），並重新 bootstrap 驗證。
+任何一項 FAIL → 使用 snapshot rollback managed resources；若做過 Brain Index migration，同時回復 migration 前 index，再重新 bootstrap 驗證。
 
 ## Rollback 邊界
 
-Rollback 只恢復本次更新的 Distribution-managed resources：Registry、portable Brain Index、runtime contracts、Skill packages 與 `課綱_各領域`。
+Rollback 只恢復本次更新的 Distribution-managed resources：Registry、runtime contracts、Skill packages 與 `課綱_各領域`；若本次執行過 Brain Index additive migration，則只回復該 migration 造成的 index 變更或使用其 snapshot 還原。
 
 不得因 rollback 刪除或回退：
 - 正式 ENV
+- Brain Index 中本次 migration 前已存在的其他 entries
 - `10_KNOWLEDGE_BASE` 其他 user-owned Knowledge
 - Experience / Error Log
 - Workspace / Output
@@ -134,4 +137,4 @@ Rollback 只恢復本次更新的 Distribution-managed resources：Registry、po
 - Google Drive = 老師自己的 runtime installation。
 - ENV = installation-specific locator，不是 credential。
 - 不把別人的 ENV、Drive URL、私人 Brain、學生個資、secrets、tokens 或工作 trace 放入 Distribution。
-- 大量覆寫、managed curriculum overwrite、rollback、正式治理修改都需要 Human Gate。
+- 大量覆寫、managed curriculum overwrite、Brain Index migration、rollback、正式治理修改都需要 Human Gate。

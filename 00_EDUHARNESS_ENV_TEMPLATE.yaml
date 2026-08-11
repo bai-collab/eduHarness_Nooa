@@ -1,0 +1,52 @@
+schema_version: 1
+env_kind: "eduHarness-cloud"
+status: "template"
+
+installation:
+  name: "<USER_FILL_INSTALLATION_NAME>"
+  edition: "cloud"
+  owner_label: "<USER_FILL_OWNER_LABEL>"
+
+workspace:
+  root_mode: "explicit"
+  drive_root: "<USER_FILL_EDUHARNESS_DRIVE_ROOT_URL>"
+
+  admin: "00_ADMIN"
+  registry: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+  brain_index: "00_ADMIN/01_BRAIN_INDEX.yaml"
+  skills: "00_ADMIN/SKILLS"
+  knowledge_base: "10_KNOWLEDGE_BASE"
+  templates: "20_TEMPLATES"
+  experience: "30_EXPERIENCE"
+  error_log: "40_ERROR_LOG"
+  work_area: "50_WORKSPACE"
+  shared_resources: "80_SHARED_RESOURCES"
+  output: "90_OUTPUT"
+  review_later: "98_REVIEW_LATER"
+  archive: "99_ARCHIVE"
+
+external_libraries:
+  literature_library:
+    enabled: false
+    namespace: "lit"
+    drive_root: "<OPTIONAL_USER_FILL_LITERATURE_LIBRARY_DRIVE_ROOT_URL>"
+    registry: "00_ADMIN/00_SKILL_REGISTRY.yaml"
+    loading: "on-demand-only"
+
+runtime_preferences:
+  primary_targets:
+    - chatgpt_web
+    - gemini_spark
+
+setup_instructions:
+  - "複製此模板後，將檔名改為 00_EDUHARNESS_ENV.yaml。"
+  - "填入自己的 eduHarness Cloud Google Drive 根目錄 URL。"
+  - "若沒有 Literature Library，保持 enabled: false；不需要填 literature drive_root。"
+  - "若有自己的 Literature Library，改為 enabled: true 並填入其 Drive root。"
+  - "不要修改 Project YAML 來填個人 Drive URL。"
+
+rules:
+  - "此模板不是 runtime ENV；正式環境只認 00_EDUHARNESS_ENV.yaml。"
+  - "個人 Drive URL 與外部 Library URL 只放 ENV。"
+  - "Skill 與 Knowledge 擴充由 Registry / Brain Index 管理，不修改 Project YAML。"
+  - "不得保存 secrets、tokens、cookies、credentials、private keys 或學生個資。"

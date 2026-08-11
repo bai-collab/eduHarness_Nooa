@@ -124,6 +124,20 @@ skills:
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
     constraints: {human_gate_if: ["批次同步", "覆寫既有 Cloud Skill 的重大流程", "刪除或重新命名 Skill"]}
 
+  - id: cloud-skill-builder
+    namespace_id: "edu:cloud-skill-builder"
+    canonical_name: "eduHarness Cloud Skill Builder"
+    file: "00_ADMIN/SKILLS/_META/cloud-skill-builder/SKILL.md"
+    metadata: {type: meta, role: primary-capability}
+    selection:
+      triggers: ["新增 eduHarness Cloud Skill", "建立 Cloud Skill", "修改 Cloud Skill", "擴充 Cloud Skill", "設計 Skill package", "Skill create vs extend", "Skill routing impact analysis"]
+      excludes: ["同步 GitHub skill", "安裝 eduHarness Cloud", "升級 eduHarness Cloud", "一般教案撰寫", "一般命題", "一般教材製作", "一般文獻查詢"]
+    relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: ["edu:github-to-cloud-skill-port", "edu:cloud-bootstrap"]}
+    constraints: {human_gate_if: ["新增或修改 production Registry entry", "新增或修改 KeyPoint catalog", "新增或修改 production route", "重大覆寫既有 Skill procedure", "刪除或重新命名 production Skill", "批次同步多個 Skill", "發布 GitHub Canonical Distribution main", "任何可能破壞 routing 的治理修改"]}
+    runtime: {chatgpt_web: "supported", gemini_spark: "supported"}
+    source: {kind: "local-design", provenance: "CLOUD_SKILL_BUILDER_DEVELOPMENT_PLAN.md Draft 0.1 + validated Drive production", upstream_version: "0.1.0"}
+    cloud: {port_mode: "native-cloud", sync_status: "canonical"}
+
   - id: lesson-plan-authoring
     namespace_id: "edu:lesson-plan-authoring"
     canonical_name: "教案撰寫"
@@ -318,8 +332,8 @@ skills:
     constraints: {human_gate_if: ["學生個資或可識別學習紀錄", "錄音錄影", "正式評量或成績", "研究編碼、IRB 或正式送件"]}
 
 installed_cloud_skills:
-  count: 16
-  meta_count: 2
+  count: 17
+  meta_count: 3
   workflow_count: 14
 
 validation_expectations:

@@ -1,0 +1,28 @@
+name: eduHarness App PoC CI
+
+on:
+  push:
+    branches:
+      - poc/eduharness-app-v0.1
+    paths:
+      - "poc/eduharness-app-v0.1/**"
+      - ".github/workflows/poc-eduharness-app.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: poc/eduharness-app-v0.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: poc/eduharness-app-v0.1/package-lock.json
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

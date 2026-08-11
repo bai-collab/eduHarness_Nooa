@@ -1,6 +1,6 @@
 # eduHarness Registry Graph Schema v2
 
-Status: Draft specification  
+Status: Cutover-ready specification  
 Target: eduHarness Cloud Registry Schema v2  
 Scope: Registry graph model, routing semantics, validation contract  
 Runtime targets: ChatGPT Web, Gemini Spark
@@ -48,6 +48,14 @@ A Skill loaded to support the Primary Skill without replacing its domain rules, 
 
 A state/input-dependent transfer of Primary Skill responsibility from one Skill to another.
 
+### Entry-known route guard
+
+A route condition that can be evaluated from the task input or already-resolved state before dependency loading or substantive Skill execution.
+
+### Post-execution route guard
+
+A route condition that can only be evaluated after the current Primary Skill has produced or inspected execution state.
+
 ### Relation target
 
 The `namespace_id` of another registered Skill.
@@ -86,6 +94,7 @@ A v2 Skill entry SHOULD follow this shape:
       - when: "ordinary_lesson"
         to: "edu:lesson-plan-authoring"
         mode: handoff
+        evaluation: entry
     conflicts: []
     replaces: []
     supports: []
@@ -177,7 +186,7 @@ No runtime MAY treat all relation types as equivalent `A -> B` traversal.
 ```yaml
 relations:
   requires:
-    - "edu:lesson-plan-authoring"
+    - "edu:material-to-quest-game"
 ```
 
 Runtime behavior:
@@ -224,6 +233,12 @@ An `enhances` target MUST NOT replace the Primary Skill merely because it was lo
 
 This relation is intended to distinguish conditional supporting capabilities from mandatory prerequisites.
 
+### Adjudicated migration rule: reasoning-kernel
+
+For Registry v2 migration, `edu:conjecturing-five-stage` MUST treat `edu:reasoning-kernel` as `enhances[reasoning_policy.activation]`, not as an unconditional `requires` relation, unless a future Skill contract explicitly establishes that every execution is invalid without the reasoning kernel.
+
+`edu:conjecturing-five-stage-facilitator` MUST treat `edu:reasoning-kernel` as a stage-sensitive enhancing capability, currently activated for `stage_3_validation`.
+
 ---
 
 ## 9. `routes`
@@ -238,7 +253,38 @@ relations:
     - when: "existing_lesson_for_tiering"
       to: "edu:lesson-differentiation"
       mode: handoff
+      evaluation: entry
 ```
+
+### Route fields
+
+Each route MUST contain:
+
+```yaml
+when:
+to:
+mode:
+```
+
+A route MAY contain:
+
+```yaml
+evaluation: entry | post_execution
+```
+
+If `evaluation` is omitted, runtime MUST default to `post_execution` for safety and backward compatibility.
+
+### `evaluation: entry`
+
+Use when the guard can be determined from initial task input or already-known state before dependency resolution.
+
+When true, the runtime MUST hand off before loading the source Skill's `requires` or `enhances` relations.
+
+This prevents unnecessary dependency loading for a Skill that should not remain Primary.
+
+### `evaluation: post_execution`
+
+Use when the route condition depends on evidence or state produced during execution of the current Primary Skill.
 
 ### Initial route mode
 
@@ -255,8 +301,6 @@ Additional modes such as `delegate` or `resume` MUST NOT be added until a concre
 Route cycles are not globally forbidden because they may describe legitimate state transitions.
 
 However, runtime MUST implement loop protection.
-
-Recommended global policy:
 
 ```yaml
 graph_policy:
@@ -337,12 +381,7 @@ relations:
     - "edu:example-skill"
 ```
 
-`supports` MUST NOT imply:
-
-- automatic loading,
-- dependency,
-- Primary Skill handoff,
-- execution order.
+`supports` MUST NOT imply automatic loading, dependency, Primary Skill handoff, or execution order.
 
 If automatic loading is required, use `requires` or `enhances`.
 
@@ -382,6 +421,7 @@ graph_policy:
     cycle_allowed: conditional
     max_route_hops: 5
     repeated_node_state_action: stop
+    omitted_evaluation_default: post_execution
 
   conflicts:
     simultaneous_activation: forbidden
@@ -400,64 +440,37 @@ graph_policy:
 A Registry v2 implementation MUST perform at least these checks.
 
 ### V01 — Unique namespace
-
-All `namespace_id` values must be unique.
-
-Failure: `SKILL_NAMESPACE_CONFLICT`.
+All `namespace_id` values must be unique. Failure: `SKILL_NAMESPACE_CONFLICT`.
 
 ### V02 — Valid relation target
-
-Every relation target must resolve to an existing Registry node unless explicitly allowed by a future external namespace contract.
-
-Failure: `SKILL_RELATION_TARGET_NOT_FOUND`.
+Every relation target must resolve to an existing Registry node unless explicitly allowed by a future external namespace contract. Failure: `SKILL_RELATION_TARGET_NOT_FOUND`.
 
 ### V03 — Dependency cycle
-
-The `requires` graph must be a DAG.
-
-Failure: `SKILL_DEPENDENCY_CYCLE`.
+The `requires` graph must be a DAG. Failure: `SKILL_DEPENDENCY_CYCLE`.
 
 ### V04 — Self dependency
-
-`A requires A` is invalid.
-
-Failure: `REGISTRY_GRAPH_INVALID`.
+`A requires A` is invalid. Failure: `REGISTRY_GRAPH_INVALID`.
 
 ### V05 — Route target integrity
-
-Every route target must resolve to a valid Skill node.
-
-Failure: `SKILL_RELATION_TARGET_NOT_FOUND`.
+Every route target must resolve to a valid Skill node. Failure: `SKILL_RELATION_TARGET_NOT_FOUND`.
 
 ### V06 — Route loop safety
-
-Route cycles may exist, but runtime loop-protection policy must be defined.
-
-Uncontrolled repetition fails with `SKILL_ROUTE_LOOP`.
+Route cycles may exist, but runtime loop-protection policy must be defined. Uncontrolled repetition fails with `SKILL_ROUTE_LOOP`.
 
 ### V07 — Conflict consistency
-
-Contradictory active relations must be detected.
-
-Failure: `SKILL_RELATION_CONFLICT`.
+Contradictory active relations must be detected. Failure: `SKILL_RELATION_CONFLICT`.
 
 ### V08 — Replacement integrity
-
-Replacement cycles are invalid.
-
-Failure: `SKILL_REPLACEMENT_CYCLE`.
+Replacement cycles are invalid. Failure: `SKILL_REPLACEMENT_CYCLE`.
 
 ### V09 — Namespace integrity
-
-Relation targets must use canonical namespace references.
-
-Failure: `REGISTRY_GRAPH_INVALID`.
+Relation targets must use canonical namespace references. Failure: `REGISTRY_GRAPH_INVALID`.
 
 ### V10 — Semantic relation conflict
+A pair of Skills must not carry logically impossible combinations such as both mandatory dependency and hard conflict. Failure: `SKILL_RELATION_CONFLICT`.
 
-A pair of Skills must not carry logically impossible combinations such as both mandatory dependency and hard conflict.
-
-Failure: `SKILL_RELATION_CONFLICT`.
+### V11 — Route evaluation value
+If present, `routes[].evaluation` MUST be either `entry` or `post_execution`. Any other value fails with `REGISTRY_GRAPH_INVALID`.
 
 ---
 
@@ -475,6 +488,8 @@ Reference validation
 Relation validation
     ↓
 Dependency-cycle validation
+    ↓
+Route-evaluation validation
     ↓
 Route-safety validation
     ↓
@@ -510,14 +525,22 @@ Each existing dependency must therefore receive a semantic audit before v2 cutov
 
 ## 18. Runtime routing order
 
-A v2-compatible runtime SHOULD follow this order:
+A v2-compatible runtime MUST follow this ordering model:
 
 ```text
 User Input
     ↓
 Selection Layer
     ↓
-Primary Skill
+Provisional Primary Skill
+    ↓
+Evaluate routes[evaluation=entry]
+    ↓
+If handoff: target becomes provisional Primary Skill
+    ↓
+Repeat entry-route evaluation with loop protection
+    ↓
+Confirm Primary Skill
     ↓
 Resolve requires
     ↓
@@ -529,16 +552,18 @@ Plan
     ↓
 Execute
     ↓
-Evaluate routes
+Evaluate routes[evaluation=post_execution or omitted]
     ↓
-If handoff: target becomes new Primary Skill
+If handoff: target becomes new provisional Primary Skill
     ↓
 Route loop protection
     ↓
-Verify
+Verify / continue
 ```
 
 The runtime MUST distinguish "load another capability" from "transfer execution responsibility".
+
+Entry-route evaluation MUST occur before dependency loading when the route guard is explicitly marked `evaluation: entry`.
 
 ---
 
@@ -553,7 +578,7 @@ EXECUTION_PLAN_INVALID
 REPLAN_BLOCKED
 ```
 
-Proposed Registry v2 failures:
+Registry v2 failures:
 
 ```text
 REGISTRY_GRAPH_INVALID
@@ -579,23 +604,46 @@ Registry v1 remains runtime SSOT until all of the following are complete:
 5. routing regression tests,
 6. Project Kernel routing-contract update,
 7. Distribution update,
-8. Cloud installation verification.
+8. Cloud installation verification,
+9. final cutover Human Gate.
 
 The v2 migration SHOULD minimize changes to individual `SKILL.md` files. Graph semantics belong in Registry; procedure semantics remain in Skill files.
 
 ---
 
-## 21. Definition of done for Schema v2 specification
+## 21. Adjudicated Phase 3 review items
 
-The specification is ready for implementation when:
+### A. `conjecturing-five-stage` reasoning relation
+
+Decision: `enhances`, not `requires`.
+
+Basis:
+
+- v1 Registry used `dependencies`;
+- the Skill contract does not establish reasoning-kernel as mandatory for every execution;
+- global reasoning policy defines reasoning-kernel as conditional supporting capability;
+- regression testing preserved reasoning availability when reasoning activation is present.
+
+### B. Early-route ordering
+
+Decision: keep a single `routes` relation type and add optional `evaluation` phase metadata.
+
+No new `entry_routes` relation type is introduced.
+
+---
+
+## 22. Definition of done for Schema v2 specification
+
+The specification is cutover-ready when:
 
 - node / selection / relation / constraint boundaries are explicit;
 - all six relation types have runtime semantics;
 - namespace reference rules are fixed;
 - `requires` and `enhances` are distinct;
-- route handoff and loop-protection behavior are defined;
+- route handoff, evaluation phase, and loop-protection behavior are defined;
 - graph validation rules and failure codes are defined;
 - v1 → v2 migration rules are defined;
+- Phase 3 review items are adjudicated;
 - no installation-specific locator is introduced.
 
-This document defines the graph contract only. It does not by itself activate Registry v2 at runtime.
+This document defines the graph contract. Runtime activation still requires a validated cutover Registry and final cutover gate.

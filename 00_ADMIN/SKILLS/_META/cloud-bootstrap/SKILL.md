@@ -41,7 +41,7 @@ description: >
 - active Project Kernel 仍支援 target Registry schema；且
 - Distribution Manifest 沒有宣告 Kernel breaking change，
 
-就保留目前 Project Instructions，僅升級教師 Drive 中受管理的 Registry / runtime contracts / Skill packages / curriculum resources。
+就保留目前 Project Instructions，僅升級教師 Drive 中受管理的 Registry / runtime contracts / Skill packages / curriculum resources，並只在 Manifest 明確要求時對 Brain Index 做 additive migration。
 
 只有 Kernel 本身有 breaking governance/runtime change，才提出新的 Project Instructions migration，並在執行前取得 Human Gate。
 
@@ -90,23 +90,32 @@ description: >
 ### Missing resource
 若 curriculum index 或 Manifest 要求的必要領域檔缺失、不可讀或 reconstruct 不完整，停止並回報 `CURRICULUM_RESOURCE_INCOMPLETE`；不得宣稱 `INSTALLATION_READY`。
 
+## Brain Index Migration Contract
+- Fresh install：直接安裝 Distribution 內最新版 portable `01_BRAIN_INDEX.yaml`。
+- Existing installation：預設保留 local Brain Index；只有 Manifest 宣告 migration 且必要 entry 缺失時才執行。
+- Curriculum migration 只新增／更新 `curriculum_standards` 的 portable relative-path entry；不得整份覆寫 Brain Index。
+- Migration 前 snapshot local Brain Index；additive merge 後必須確認既有 entries 未消失。
+- 若無法可靠做 additive merge、發現 schema/source conflict 或驗證既有 entries preservation 失敗，回報 `BRAIN_INDEX_MIGRATION_FAILED` 並停止／rollback。
+
 ## Upgrade Contract
 ### 原則
 升級只更新 Distribution-managed runtime resources；老師自己的資料不應被當作發行檔覆寫。
 
 ### Upgrade preflight
 1. 先讀既有正式 `00_EDUHARNESS_ENV.yaml`。
-2. 依 ENV fresh-read local Registry、runtime contracts、Skills root、curriculum managed subtree。
+2. 依 ENV fresh-read local Registry、Brain Index、runtime contracts、Skills root、curriculum managed subtree。
 3. 讀官方 Distribution Manifest。
 4. 確認 target Registry schema 在 active Kernel `registry_schema_support` 內。
 5. 確認 required Distribution resources 全部存在且可讀。
 6. 確認 installation root 唯一且可寫。
+7. 若 Manifest 宣告 Brain Index migration，確認 local index 可讀且 additive merge 可驗證。
 
 任一 preflight 失敗即停止，不做 partial upgrade。
 
 ### Upgrade preserve set
 預設不得覆寫：
 - `00_EDUHARNESS_ENV.yaml`
+- Local `01_BRAIN_INDEX.yaml` 的既有 entries；只允許 Manifest 明確宣告的 additive migration entry
 - `10_KNOWLEDGE_BASE` 中 distribution-managed `課綱_各領域` 以外的 user-owned Knowledge
 - 使用者 Experience / Error Log
 - 使用者 Templates
@@ -115,36 +124,37 @@ description: >
 - `90_OUTPUT`
 - `98_REVIEW_LATER`
 - `99_ARCHIVE`
-- Brain Index 內容（除非 Distribution 明確包含必要的 portable index 更新；仍不得寫入 installation-specific locator 或私人 Brain content）
 
 ### Upgrade managed set
 可由 Distribution 更新：
 - `00_ADMIN/00_EDU_SKILL_REGISTRY.yaml`
-- `00_ADMIN/01_BRAIN_INDEX.yaml` 的 portable Distribution index
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml`
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml`
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
 - Distribution-managed `00_ADMIN/SKILLS/**` packages
 - `10_KNOWLEDGE_BASE/課綱_各領域/**`
+- Manifest 明確宣告的 portable Brain Index additive migration entries
 
 ### Snapshot + Human Gate
-在任何 managed production resource 被替換前：
-1. 將現行 Registry / Brain Index / runtime contracts / 受影響 Skill packages / managed curriculum subtree 建立 rollback snapshot 到 `ENV.workspace.work_area`。
-2. 顯示 upgrade diff scope、preserve set、rollback plan。
-3. 取得明確 Human Gate。
+在任何 managed production resource 被替換或 Brain Index migration 寫入前：
+1. 將現行 Registry / runtime contracts / 受影響 Skill packages / managed curriculum subtree 建立 rollback snapshot 到 `ENV.workspace.work_area`。
+2. 若需 Brain Index migration，同時 snapshot local Brain Index。
+3. 顯示 upgrade diff scope、preserve set、Brain Index migration scope、rollback plan。
+4. 取得明確 Human Gate。
 
-「檢查更新」「同步」「繼續」本身不等於覆寫授權；若使用者已明確要求並核准此次 upgrade scope，才執行 managed overwrite。
+「檢查更新」「同步」「繼續」本身不等於覆寫授權；若使用者已明確要求並核准此次 upgrade scope，才執行 managed overwrite／migration。
 
 ### Upgrade execution
 依 dependency-safe order：
 1. runtime contracts
-2. portable Brain Index
-3. Registry
-4. complete Skill packages
-5. managed curriculum resources
+2. Registry
+3. complete Skill packages
+4. managed curriculum resources
+5. declared Brain Index additive migration
 
 Skill 以 folder/package 為單位，不只複製 `SKILL.md`；所有 required references/templates/assets/subresources 必須一起保持完整。
 Curriculum 只允許重建 `10_KNOWLEDGE_BASE/課綱_各領域` managed subtree，不得以整個 `10_KNOWLEDGE_BASE` 為 overwrite 單位。
+Brain Index migration 必須是 additive merge，不得以 canonical file 全量取代 local index。
 
 ### Upgrade verification
 寫入後必須：
@@ -154,7 +164,7 @@ Curriculum 只允許重建 `10_KNOWLEDGE_BASE/課綱_各領域` managed subtree�
 4. State Builder reference 可讀。
 5. Audit Trace Contract / Trace Adapter reference 可讀。
 6. installed Skill count 與 Manifest expectation 相符。
-7. Brain Index 可解析 curriculum index。
+7. Brain Index 可解析 curriculum index，且 migration 前既有 entries 仍存在。
 8. curriculum index 與全部必要領域課綱可讀。
 9. `10_KNOWLEDGE_BASE` 中 user-owned Knowledge 未被覆寫。
 10. installation-specific Drive locator 不得出現在 ENV 以外的 Distribution-managed files。
@@ -164,7 +174,8 @@ Curriculum 只允許重建 `10_KNOWLEDGE_BASE/課綱_各領域` managed subtree�
 ### Rollback
 任何 verification failure：
 - 只 rollback 此次 upgrade 的 managed resources；
-- 使用 pre-upgrade snapshot 還原 Registry / Brain Index / runtime contracts / Skill packages / managed curriculum subtree；
+- 使用 pre-upgrade snapshot 還原 Registry / runtime contracts / Skill packages / managed curriculum subtree；
+- 若執行過 Brain Index additive migration，只還原該 migration 造成的變更或使用 snapshot 還原 local Brain Index；
 - 不回滾/刪除教師自己的 ENV、user-owned Knowledge、Experience、Workspace、Output；
 - rollback 寫入同樣需要 Human Gate；
 - rollback 後重新 fresh bootstrap 驗證。
@@ -207,6 +218,7 @@ Curriculum 只允許重建 `10_KNOWLEDGE_BASE/課綱_各領域` managed subtree�
 - `INSTALL_ENV_INVALID`
 - `EDU_REGISTRY_UNAVAILABLE`
 - `BRAIN_INDEX_UNAVAILABLE`
+- `BRAIN_INDEX_MIGRATION_FAILED`
 - `CURRICULUM_RESOURCE_INCOMPLETE`
 - `SKILL_PACKAGE_INCOMPLETE`
 - `SAVE_FAILED`

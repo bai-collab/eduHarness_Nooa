@@ -50,10 +50,12 @@
    - `00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml`
    - `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
    - 完整 `00_ADMIN/SKILLS/**` packages
-6. 建立正式 `00_EDUHARNESS_ENV.yaml`，其中 `workspace.drive_root` 使用老師提供的 URL。
-7. 不複製其他 installation 的私人 Knowledge、Experience、Error Log、Workspace、Output 或 Archive。
-8. 重新從正式 ENV 讀取 Registry、Brain Index、runtime contracts、Skills。
-9. 全部 read-back PASS 才可回報 `INSTALLATION_READY`。
+   - Distribution-managed `10_KNOWLEDGE_BASE/課綱_各領域/**`
+6. 課綱至少必須包含 `README_課綱索引.md` 與 Manifest 要求的各領域課綱；安裝後教案 Skill 依領域／學習階段按需讀取，不預載全部課綱。
+7. 建立正式 `00_EDUHARNESS_ENV.yaml`，其中 `workspace.drive_root` 使用老師提供的 URL。
+8. 不複製其他 installation 的私人 Knowledge、Experience、Error Log、Workspace、Output 或 Archive。
+9. 重新從正式 ENV 讀取 Registry、Brain Index、runtime contracts、Skills 與 curriculum resources。
+10. 全部 read-back PASS 才可回報 `INSTALLATION_READY`；課綱缺失時必須失敗，不得把空 Knowledge Base 視為完成安裝。
 
 ## 安裝後結構
 ```text
@@ -67,6 +69,9 @@ eduHarness_Nooa/
 │   ├── REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml
 │   └── SKILLS/
 ├── 10_KNOWLEDGE_BASE/
+│   └── 課綱_各領域/
+│       ├── README_課綱索引.md
+│       └── <各領域課綱 Markdown>
 ├── 20_TEMPLATES/
 ├── 30_EXPERIENCE/
 ├── 40_ERROR_LOG/
@@ -76,6 +81,8 @@ eduHarness_Nooa/
 ├── 98_REVIEW_LATER/
 └── 99_ARCHIVE/
 ```
+
+`10_KNOWLEDGE_BASE/課綱_各領域` 由 Distribution 管理；教師自行加入 `10_KNOWLEDGE_BASE` 其他位置的教材、校本資料與教學筆記屬 user-owned，不得因一般升級被刪除或覆寫。
 
 ## 之後如何升級？
 在原本的 Project 直接輸入：
@@ -87,8 +94,9 @@ eduHarness_Nooa/
 正常升級：
 - 不重新貼 Project Instructions。
 - 不替換正式 ENV。
-- 不覆寫老師的 Knowledge / Experience / Workspace / Output。
-- 先 snapshot 受管理的 Registry / runtime contracts / Skill packages。
+- 不覆寫老師的 user-owned Knowledge / Experience / Workspace / Output。
+- 可更新 Distribution-managed `10_KNOWLEDGE_BASE/課綱_各領域`，但不能把整個 Knowledge Base 當成 overwrite 單位。
+- 先 snapshot 受管理的 Registry / Brain Index / runtime contracts / Skill packages / curriculum resources。
 - 顯示 upgrade scope 與 rollback plan。
 - 在 managed production overwrite 前取得 Human Gate。
 - 更新後重新由原 ENV bootstrap 驗證；失敗就 rollback managed resources。
@@ -100,6 +108,7 @@ eduHarness_Nooa/
 - 除正式 ENV 外，Kernel、Registry、Brain Index、runtime contracts、Skills 不得保存 installation-specific Drive URL/ID。
 - Distribution 不能包含私人 Brain、學生個資、tokens、cookies、credentials、private keys。
 - Skill 更新以完整 package 為單位，不能只更新 `SKILL.md` 而漏掉 references/templates/assets。
+- 課綱更新只限 Distribution-managed curriculum subtree；不得覆寫其他教師 Knowledge。
 - 既有 production managed resources 的覆寫、批次搬移、rollback 都需 Human Gate。
 - 工具沒有實際成功並 read-back 時，不得宣稱安裝或升級完成。
 
@@ -109,7 +118,8 @@ eduHarness_Nooa/
 - routing guard contract：`2.1`
 - State Builder：required
 - Observability：Audit Trace Contract + Runtime Trace Adapter
-- installed cloud skills：`16`
+- installed cloud skills：`17`
+- curriculum standards：required Distribution resource
 
 ## 常見失敗狀態
 - `INSTALL_ROOT_REQUIRED`
@@ -119,6 +129,7 @@ eduHarness_Nooa/
 - `INSTALL_ENV_INVALID`
 - `EDU_REGISTRY_UNAVAILABLE`
 - `BRAIN_INDEX_UNAVAILABLE`
+- `CURRICULUM_RESOURCE_INCOMPLETE`
 - `SKILL_PACKAGE_INCOMPLETE`
 - `UPGRADE_PREFLIGHT_FAILED`
 - `UPGRADE_VERIFICATION_FAILED`
@@ -126,10 +137,10 @@ eduHarness_Nooa/
 - `SAVE_UNVERIFIED`
 
 ## 驗收標準
-只有新 installation 能從正式 ENV 重新發現 Registry、Brain Index、State Builder、Observability contracts 與完整 Skills，且 ENV 以外沒有 installation-specific locator，才可回報：
+只有新 installation 能從正式 ENV 重新發現 Registry、Brain Index、State Builder、Observability contracts、完整 Skills 與必要 curriculum resources，且 ENV 以外沒有 installation-specific locator，才可回報：
 
 `INSTALLATION_READY`
 
-升級則只有 preserve set 未被破壞、managed resources 全部更新且重新 bootstrap PASS，才可回報：
+升級則只有 user-owned Knowledge / preserve set 未被破壞、managed resources（含 curriculum subtree）全部更新且重新 bootstrap PASS，才可回報：
 
 `UPGRADE_READY`

@@ -24,7 +24,7 @@ eduHarness 把 AI 變成一個比較穩定的「教師工作台」：
 
 eduHarness_Nooa 的設計過程參考了下列公開資料與實作方向；這些來源提供概念與設計啟發，eduHarness_Nooa 並非其官方衍生版本：
 
-1. [arXiv:2607.20709](https://arxiv.org/abs/2607.20709) — 參考其對 AI／agent 系統設計的研究觀點。
+1. [NVIDIA-labs OO Agents: Native Python Object-Oriented Agents（arXiv:2607.20709）](https://arxiv.org/abs/2607.20709) — 參考其對 AI／agent 系統設計的研究觀點。
 2. [Anthropic K-12 Teacher Skills](https://github.com/anthropics/k12-teacher-skills/tree/main) — 參考教師工作 Skill 的模組化、可重用程序與教育情境設計方式。
 
 此外，eduHarness_Nooa 依自身目標加入 Portable Kernel、ENV、Registry、Brain Index、Skill routing、Cloud installation、Human Gate 與輸出路由等結構，以支援 ChatGPT Web／Gemini Spark 的教師工作流程。

@@ -1,0 +1,422 @@
+schema_version: 1
+registry: "eduHarness Cloud Skill Registry"
+namespace: "edu"
+edition: "cloud"
+status: "active"
+
+runtime_targets:
+  - chatgpt_web
+  - gemini_spark
+
+environment_contract:
+  runtime_env_anchor: "00_EDUHARNESS_ENV.yaml"
+  template: "00_EDUHARNESS_ENV_TEMPLATE.yaml"
+  rule: >
+    Registry 不保存個人 Drive root。Project 先讀正式 ENV，
+    再由 ENV.workspace.registry 找到本 Registry。
+
+source_contract:
+  cloud_distribution_repository: "https://github.com/bai-collab/eduHarness_Nooa.git"
+  cloud_distribution_branch: "main"
+  cloud_runtime_ssot: "Google Drive installation resolved from ENV"
+  code_skill_upstream_repository: "https://github.com/bai-collab/eduHarness-.git"
+  code_skill_upstream_branch: "main"
+  code_skill_upstream_root: "brain/skills"
+  rule: >
+    eduHarness_Nooa GitHub repository 是 Cloud Canonical Distribution；Google Drive 是各 installation 的 Cloud runtime。
+    Code Edition Skill 的功能演進可來自 bai-collab/eduHarness-，經 functional adaptation 後進入 Cloud Distribution 與各 installation。
+    Cloud Skill 不要求與 Code Edition Skill 逐字相同，但相同能力優先保留相同 skill_id。
+
+routing_policy:
+  unknown_skill_action: "stop"
+  preload_all_skills: false
+  read_skill_full_text_before_execute: true
+  dependency_source: "registry-only"
+  namespace_required: true
+
+reasoning_policy:
+  mode: "conditional"
+  kernel_skill: "reasoning-kernel"
+  activation:
+    - "存在兩個以上合理假設、方案或解釋，需要區分"
+    - "來源衝突、證據強度不同或關鍵資訊不完整"
+    - "診斷、除錯、研究、策略、因果判斷或高成本決策"
+    - "需要反例、測試、實驗或查證才能提高信心"
+  bypass:
+    - "單純抄錄、翻譯、格式轉換或明確規則下的機械操作"
+    - "單一可靠來源即可回答的簡單事實查詢"
+  integration_rule: >
+    先依 Registry 選擇 Primary Skill；符合 activation 時可載入 reasoning-kernel 作為 supporting capability。
+    reasoning-kernel 不得覆蓋 Primary Skill 的 domain rules、output contract、Human Gate 或 stopping rule。
+  output_rule: >
+    只保留可稽核的 evidence / hypothesis / check / result / conclusion 紀錄；
+    不要求、保存或輸出模型私有 chain-of-thought。
+
+skill_port_policy:
+  meta_skill: "github-to-cloud-skill-port"
+  port_mode: "functional-adaptation"
+  blind_mirror_allowed: false
+  auto_batch_sync_allowed: false
+  auto_overwrite_allowed: false
+  update_registry_after_success: true
+
+skills:
+  - id: "cloud-bootstrap"
+    canonical_name: "eduHarness Cloud 初始化"
+    namespace_id: "edu:cloud-bootstrap"
+    type: "meta"
+    file: "00_ADMIN/SKILLS/_META/cloud-bootstrap/SKILL.md"
+    purpose: >
+      初始化、從官方 GitHub Distribution 安裝、搬移或修復 eduHarness Cloud installation；
+      教師提供自己的 Drive root，建立標準 Drive 架構、正式 ENV、Registry、Brain Index 與必要 meta skills。
+    trigger:
+      - "初始化 eduHarness Cloud"
+      - "安裝 eduHarness Cloud"
+      - "安裝 eduHarness_Nooa"
+      - "從 Distribution 安裝 eduHarness"
+      - "建立 eduHarness Cloud 架構"
+      - "依模板建立 ENV"
+      - "搬移 eduHarness Cloud"
+      - "修復 eduHarness Cloud bootstrap"
+    anti_trigger:
+      - "一般教案撰寫"
+      - "一般命題"
+      - "一般教材製作"
+      - "一般文獻查詢"
+    dependencies: []
+    human_gate_if:
+      - "覆寫既有 ENV"
+      - "覆寫既有 Registry 或 Brain Index"
+      - "批次搬移或刪除資料"
+
+  - id: "github-to-cloud-skill-port"
+    canonical_name: "GitHub → Cloud Skill 移植"
+    namespace_id: "edu:github-to-cloud-skill-port"
+    type: "meta"
+    file: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"
+    purpose: >
+      將 GitHub eduHarness Code Edition 的指定 Skill 功能移植、比較或更新到
+      Google Drive Cloud Edition，並針對 ChatGPT Web / Gemini Spark runtime 重新適配。
+    trigger:
+      - "同步 GitHub skill"
+      - "複製 GitHub skill 到 Drive"
+      - "移植 eduHarness skill"
+      - "更新 Cloud skill"
+      - "檢查 GitHub skill 是否有新版"
+    anti_trigger:
+      - "一般教案撰寫"
+      - "一般命題"
+      - "一般教材製作"
+      - "一般文獻查詢"
+    dependencies: []
+    runtime:
+      chatgpt_web: "preferred-for-porting-when-github-connector-available"
+      gemini_spark: "consume-cloud-result; upstream-porting requires equivalent GitHub access"
+    human_gate_if:
+      - "批次同步"
+      - "覆寫既有 Cloud Skill 的重大流程"
+      - "刪除或重新命名 Skill"
+
+  - id: "lesson-plan-authoring"
+    canonical_name: "教案撰寫"
+    namespace_id: "edu:lesson-plan-authoring"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/lesson-plan-authoring/SKILL.md"
+    purpose: "從已提供或已核准的課程脈絡產出目標—活動—差異化—評量對齊的教案草稿。"
+    trigger: ["教案撰寫", "lesson plan", "教學活動設計", "教案草稿"]
+    anti_trigger: ["既有教案差異化", "試題命題", "教材轉闖關遊戲"]
+    dependencies: []
+    conditional_routes:
+      existing_lesson_for_tiering: "lesson-differentiation"
+      assessment_item_bank: "item-authoring"
+      quest_game: "material-to-quest-game"
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/lesson-plan-authoring/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "3e1e830dd2421dd8037b454a516cb8d2cdd4dc90"
+      canonical_sha256: "31E7A2696873B0CF7EAB952912172CE27584D29F7F2A2912C0AD8A58D4FBDA7C"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "lesson-differentiation"
+    canonical_name: "教案差異化教學"
+    namespace_id: "edu:lesson-differentiation"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/lesson-differentiation/SKILL.md"
+    purpose: "在既有教案上設計分層支持、補救與延伸，且不降低核心標準。"
+    trigger: ["教案差異化", "教案差異化教學", "分層教學", "lesson differentiation"]
+    dependencies: []
+    conditional_routes:
+      no_source_lesson: "lesson-plan-authoring"
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/lesson-differentiation/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "5bbf91b3502103951ab86eeed3a57bfa40a31901"
+      canonical_sha256: "5CA78FA8A2B26FACA7D2B5CF8B567B4C107B11D0FB795C44B868B48F76C4D645"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "digital-learning-lesson-plan"
+    canonical_name: "數位學習精進教案"
+    namespace_id: "edu:digital-learning-lesson-plan"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/digital-learning-lesson-plan/SKILL.md"
+    purpose: "建立具 submission profile、平台證據、操作矩陣、學習證據、隱私揭露與 fallback 的數位學習教案草稿。"
+    trigger: ["數位學習精進教案", "數位精進計畫教案", "數位學習計畫", "數位教學方案"]
+    dependencies: ["lesson-plan-authoring"]
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/digital-learning-lesson-plan/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "2c51291b6c587b7d795ab733ecb3ba4a53fcb411"
+      canonical_sha256: "686A56CA7D68E3CA5F379A9DB305D545FF1E7B7B9AAC94B7D3A1845EACCDBA31"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "item-authoring"
+    canonical_name: "試題命題"
+    namespace_id: "edu:item-authoring"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/item-authoring/SKILL.md"
+    purpose: "將課綱、教材或已核准來源轉為可審查的題庫草稿與證據清單。"
+    trigger: ["試題命題", "命題", "item authoring", "題庫"]
+    anti_trigger: ["一般教案", "教材轉遊戲", "教案差異化"]
+    dependencies: []
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/item-authoring/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "20d215bc0e08e5ea09b6a3d7059c80d9455b0320"
+      canonical_sha256: "64D0E59E5A248924E05A5CDE7FC6D451026C12EB67EFF9D315E77B87D5901EF6"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "material-to-quest-game"
+    canonical_name: "教材轉闖關遊戲"
+    namespace_id: "edu:material-to-quest-game"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/material-to-quest-game/SKILL.md"
+    purpose: "把教材轉成 physical / web / both 的闖關遊戲規格，含學習機制、可及性、安全與 playtest。"
+    trigger: ["教材轉闖關遊戲", "教材做成闖關", "Web 學習遊戲", "實體教具遊戲"]
+    dependencies: []
+    conditional_routes:
+      storyboard_needed: "visual-art-storyboard"
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/material-to-quest-game/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "5e44e0a927aa577d2822ebcb5a7f0623833d0192"
+      canonical_sha256: "D34E208A22A8BEE938CE00E0EBE6E1BDF2EF3084EB9C171DFE38E6EBBD46DD12"
+      upstream_version: 2
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "visual-art-storyboard"
+    canonical_name: "美工與分鏡設計"
+    namespace_id: "edu:visual-art-storyboard"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/visual-art-storyboard/SKILL.md"
+    purpose: "規劃美術方向、角色、場景、素材提示與可選八格連續分鏡。"
+    trigger: ["美工", "美術設計", "角色設計", "場景設計", "分鏡", "運鏡八格", "/gb", "PREVIS"]
+    dependencies: []
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/visual-art-storyboard/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "c02d2481d3d304733f620272a6a4f9126f69ab82"
+      canonical_sha256: "F30A07F3349458D2CC552A1F6C1489C28EFECCE55D643585D9F9EF24BD2F8697"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "image-to-3d-scene"
+    canonical_name: "圖片轉3D"
+    namespace_id: "edu:image-to-3d-scene"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/image-to-3d-scene/SKILL.md"
+    purpose: "把場景圖片重建成可環繞 Three.js 展示頁；有瀏覽器工具時做視覺驗證，否則明示 deferred。"
+    trigger: ["圖片轉3D", "3D 展示頁", "可環繞場景", "Three.js 場景"]
+    dependencies: []
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/image-to-3d-scene/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "2aab1e31bab6a2e850dc411cdb36f0e7dc1c708d"
+      canonical_sha256: "F2BD6AE48111E6BED4907EFA032EFC3DD6B43135C2BF4686994AAF775F629663"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "pixel-ai-secretary"
+    canonical_name: "Pixel AI 美術提示詞祕書"
+    namespace_id: "edu:pixel-ai-secretary"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/pixel-ai-secretary/SKILL.md"
+    purpose: "產生固定角色 Pixel Art AI 祕書提示包、動作安全改寫、四視角 prompt 與驗證清單。"
+    trigger: ["Pixel AI 美術提示詞祕書", "Pixel AI secretary", "固定角色 pixel art prompt"]
+    dependencies: []
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/pixel-ai-secretary/SKILL.md"
+      snapshot_commit: "95234c8b0b6da75b34f0f032ef29272a0f194aa4"
+      source_blob_sha: "c3119962f303dbbedc3ae19e8f2ad6cfa64b5309"
+      canonical_sha256: "A8D1CC7D6337CD815FC28DEF86B4EC35C3CE1A636B7A0E42294EEAC3D2D9203B"
+      upstream_version: null
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "audience-outcome-lens"
+    canonical_name: "受眾成果校準"
+    namespace_id: "edu:audience-outcome-lens"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/audience-outcome-lens/SKILL.md"
+    purpose: "在人本內容、計畫、溝通、建議與決策呈現前，以最小受眾—情境—成果框架校準重點與假設。"
+    trigger: ["受眾成果校準", "Audience Outcome Lens", "audience-outcome-lens"]
+    anti_trigger: ["精確轉換", "純計算", "客觀技術查核"]
+    dependencies: []
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/audience-outcome-lens/SKILL.md"
+      snapshot_commit: "11246662c0ecbf6ac861d66f6c5c7132ad90d674"
+      source_blob_sha: "b1c063f577151e94b41f7e6d96f321487d8a086e"
+      canonical_sha256: "77821C9F818442C6C1D38AD4EDDF3698D7F1C5C8319A6444F9526F3CFD905FA2"
+      upstream_version: "0.1.0"
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "conjecturing-five-stage"
+    canonical_name: "臆測五階段"
+    namespace_id: "edu:conjecturing-five-stage"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/conjecturing-five-stage/SKILL.md"
+    purpose: "將已提供的數學單元改寫為造例→提出猜想→效化→一般化→證實的臆測教學，含教材 ledger、反例與驗證。"
+    trigger: ["臆測五階段", "臆測教學", "臆測任務", "conjecturing teaching"]
+    anti_trigger: ["一般教案撰寫", "既有教案分層", "命題", "教材轉遊戲", "讀取既有臆測教案後引導學生"]
+    dependencies: ["reasoning-kernel"]
+    conditional_routes:
+      ordinary_lesson: "lesson-plan-authoring"
+      existing_lesson_tiering: "lesson-differentiation"
+      item_bank: "item-authoring"
+      existing_five_stage_lesson_for_student_facilitation: "conjecturing-five-stage-facilitator"
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/conjecturing-five-stage/SKILL.md"
+      snapshot_commit: "11246662c0ecbf6ac861d66f6c5c7132ad90d674"
+      source_blob_sha: "876b486128af3996380d0d65ec2f1e2216c1f3be"
+      canonical_sha256: "2730DA690A1C306B892F1658051C5E5ECD7E9B1B49EBBB5FBDB6F128824C8BF5"
+      upstream_version: null
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "quest-threejs-adoption"
+    canonical_name: "闖關遊戲 Three.js 導入"
+    namespace_id: "edu:quest-threejs-adoption"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/quest-threejs-adoption/SKILL.md"
+    purpose: "在 DOM 學習狀態與可及性路徑不被破壞的前提下，以小型 Pilot 漸進導入 Three.js 3D 教學物件。"
+    trigger: ["闖關遊戲 Three.js 導入", "教師 3D 闖關", "3D 教學物件 Pilot", "quest-threejs-adoption"]
+    dependencies: []
+    conditional_routes:
+      no_quest_spec: "material-to-quest-game"
+      single_image_scene: "image-to-3d-scene"
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/quest-threejs-adoption/SKILL.md"
+      snapshot_commit: "11246662c0ecbf6ac861d66f6c5c7132ad90d674"
+      source_blob_sha: "9c1a796078606368d4be17a5906528534f653b75"
+      canonical_sha256: "1A4A22E33BCF31079F31867E0A0A5609F085EA5DD2DA08719724DCC4F2C4933C"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "educational-web-game-workflow"
+    canonical_name: "教育 Web 教學遊戲工作流"
+    namespace_id: "edu:educational-web-game-workflow"
+    type: "workflow"
+    file: "00_ADMIN/SKILLS/educational-web-game-workflow/SKILL.md"
+    purpose: "從教材與學習目標編排 Web 遊戲規格、資產、DOM-first 實作契約、可選 Three.js Pilot 與證據式驗證。"
+    trigger: ["教育 Web 教學遊戲工作流", "教育 Web 遊戲", "教育教學遊戲", "educational-web-game-workflow"]
+    anti_trigger: ["只有教材轉遊戲規格", "已有遊戲只加 Three.js", "單張圖片轉 3D 展示頁", "只有分鏡"]
+    dependencies: ["material-to-quest-game"]
+    conditional_routes:
+      threejs_pilot: "quest-threejs-adoption"
+      single_image_scene: "image-to-3d-scene"
+      storyboard_needed: "visual-art-storyboard"
+      physical_or_both: "material-to-quest-game"
+    source:
+      kind: "github-port"
+      repository: "https://github.com/bai-collab/eduHarness-.git"
+      branch: "main"
+      upstream_path: "brain/skills/educational-web-game-workflow/SKILL.md"
+      snapshot_commit: "11246662c0ecbf6ac861d66f6c5c7132ad90d674"
+      source_blob_sha: "2ac1233a00a9e180dc58dc1fed5ea3e77c05a3a0"
+      canonical_sha256: "07D346E34A79DA6226C77F192B44678A8B50F874BE9E0E0CBF43BEA8C54A078A"
+      upstream_version: 1
+    cloud: {port_mode: "functional-adaptation", sync_status: "adapted"}
+
+  - id: "reasoning-kernel"
+    canonical_name: "證據式推理核心"
+    namespace_id: "edu:reasoning-kernel"
+    type: "workflow"
+    role: "supporting-kernel"
+    file: "00_ADMIN/SKILLS/reasoning-kernel/SKILL.md"
+    purpose: "在多重假設、證據衝突、診斷、研究、策略與需要驗證的任務中，提供觀察→假設→區分性查證→反思→整合→驗證的共用推理程序。"
+    trigger: ["推理分析", "假設驗證", "診斷推理", "reasoning kernel", "reasoning-kernel"]
+    anti_trigger: ["單純翻譯", "格式轉換", "機械式抄錄", "單一來源的簡單事實查詢"]
+    dependencies: []
+    runtime:
+      chatgpt_web: "supported"
+      gemini_spark: "supported when equivalent source/tool access exists"
+    source:
+      kind: "local-design"
+      provenance: "eduHarness Cloud runtime contract + ARC-style interactive reasoning abstraction"
+      upstream_version: "0.1.0"
+    cloud: {port_mode: "native-cloud", sync_status: "local"}
+
+  - id: "conjecturing-five-stage-facilitator"
+    canonical_name: "臆測五階段學習引導"
+    namespace_id: "edu:conjecturing-five-stage-facilitator"
+    type: "workflow"
+    role: "one-to-one-student-facilitation"
+    file: "00_ADMIN/SKILLS/conjecturing-five-stage-facilitator/SKILL.md"
+    purpose: "讀取既有臆測五階段教案，以一位學生↔一個 AI 的個人狀態機進行造例→提出猜想→效化→一般化→證實；AI 可選 Personal Seed 與 Challenge Case，但不得代替學生完成檢驗、修正與證實。"
+    trigger: ["臆測五階段學習引導", "一對一臆測學習", "一生一 AI 臆測", "引導學生臆測五階段", "讀教案帶學生臆測", "conjecturing facilitator", "conjecturing-five-stage-facilitator"]
+    anti_trigger: ["產出臆測教案", "把教材改成臆測教案", "一般教案撰寫", "教材轉遊戲", "多組同步", "全班協調", "跨裝置小組彙整"]
+    dependencies: ["reasoning-kernel"]
+    conditional_routes:
+      lesson_design_needed: "conjecturing-five-stage"
+    human_gate_if:
+      - "學生個資或可識別學習紀錄"
+      - "錄音錄影"
+      - "正式評量或成績"
+      - "研究編碼、IRB 或正式送件"
+    source:
+      kind: "local-design"
+      provenance: "conjecturing-five-stage Cloud Skill + reasoning-kernel + user-approved lesson-plan-driven one-student-one-AI facilitation design"
+      upstream_version: "0.2.0"
+    cloud: {port_mode: "native-cloud", sync_status: "local"}
+
+installed_cloud_skills:
+  count: 16
+  meta_count: 2
+  workflow_count: 14
+  note: >
+    已安裝 2 個管理用 meta Skill、13 個教育 workflow Skill 與 1 個 supporting reasoning workflow。
+    教育 workflow 來源包含 GitHub functional adaptation 與 Cloud-native local design；個別 provenance 以各 Skill source 為準。

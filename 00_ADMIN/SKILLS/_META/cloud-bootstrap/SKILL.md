@@ -1,93 +1,157 @@
 ---
 name: cloud-bootstrap
 description: >
-  初始化、散布安裝、移植或修復 eduHarness Cloud installation。
-  可從空白環境建立標準 Drive 架構，或依正式 Distribution Manifest
-  將唯讀 upstream 重建為使用者自己的 installation，建立正式 ENV、
-  Registry、Brain Index 與必要 Skills，並驗證 installation 可被 Portable Kernel 發現。
+  eduHarness Cloud installation lifecycle meta Skill。支援首次安裝、Distribution 安裝、升級、搬移與修復；
+  以 GitHub Canonical Distribution 為散布來源，以教師自己的 Google Drive 為 runtime installation。
 ---
 
 # eduHarness Cloud Bootstrap
 
 ## 定位
+`cloud-bootstrap` 負責 installation lifecycle，不處理一般教案、命題、教材或研究任務。
 
-`cloud-bootstrap` 是 eduHarness Cloud 的 installation lifecycle meta Skill。
-
-支援四種模式：
-
-1. `empty_bootstrap`：從空白 Google Drive 建立新的 eduHarness Cloud installation。
-2. `distribution_install`：從合法、唯讀的 eduHarness Distribution 建立使用者自己的 installation；Distribution 是安裝來源，不是 runtime workspace。
-3. `move`：將既有 installation 搬移到新的 Drive root。
-4. `repair`：修復缺少或失效的 bootstrap 資源。
-
-一般教案、命題、教材或研究任務不得觸發。
+支援五種模式：
+1. `empty_bootstrap`：從空白 Drive 建立新的 installation。
+2. `distribution_install`：從官方 GitHub Distribution 建立教師自己的 installation。
+3. `upgrade`：把既有 installation 的受管理 runtime resources 升級到目前 stable Distribution。
+4. `move`：搬移 installation 到新的 Drive root。
+5. `repair`：修復缺少或失效的 bootstrap resources。
 
 ## 觸發
-
-- 初始化 eduHarness Cloud
-- 安裝 eduHarness Cloud
+- 初始化 / 安裝 eduHarness Cloud
 - 安裝 eduHarness_Nooa
 - 從 Distribution 安裝 eduHarness
-- 幫我建立 eduHarness Cloud 架構
-- 依模板建立 ENV
-- 搬移 / 複製 eduHarness Cloud 到新的 Drive
+- 升級 / 更新 eduHarness Cloud
+- 同步我的 installation 到最新版
+- 搬移 / 複製 eduHarness Cloud
 - 修復 eduHarness Cloud bootstrap
 
-## 模式判定
+## Canonical Distribution Contract
+- Canonical Distribution 固定由 Project Kernel `upstream.repository` / `upstream.branch` 解析。
+- 必須讀取 `00_EDUHARNESS_DISTRIBUTION.yaml`，不得依記憶猜版本或資源。
+- GitHub Distribution 是唯讀散布來源；Google Drive 才是每位教師自己的 runtime installation。
+- Distribution locator 不代表寫入權限；所有寫入依當次 authenticated user / connector ACL。
+- 正式 ENV 永遠在教師自己的 Drive 產生，絕不複製他人的正式 ENV。
 
-- `empty_bootstrap`：從空白 Drive 建立 installation，未指定 Distribution source。
-- `distribution_install`：從正式 Distribution、公開母版或其他可辨識 eduHarness Distribution 建立自己的 installation。
-- `move`：將既有 installation 搬移或複製到另一個 Drive root。
-- `repair`：修復既有 installation 的 bootstrap resource。
+## Project Instructions 穩定性
+一般 Distribution upgrade **不得要求老師重新貼 Project Instructions**。
 
-若無法唯一判定模式，不得自行選擇可能覆寫既有資料的模式。
+只要：
+- active Project Kernel 仍支援 target Registry schema；且
+- Distribution Manifest 沒有宣告 Kernel breaking change，
 
-## Distribution Contract
+就保留目前 Project Instructions，僅升級教師 Drive 中受管理的 Registry / runtime contracts / Skill packages。
 
-`distribution_install` 必須從 Project Kernel 宣告的官方 GitHub upstream 解析並讀取合法 `00_EDUHARNESS_DISTRIBUTION.yaml`。教師只需提供自己的 Google Drive installation root。
+只有 Kernel 本身有 breaking governance/runtime change，才提出新的 Project Instructions migration，並在執行前取得 Human Gate。
 
-Canonical Distribution 由 Project Kernel 宣告的官方 GitHub upstream 提供；Google Drive 僅作為各使用者的 Cloud runtime installation。Distribution 與 Installation 必須視為不同 resource scope。不得將 GitHub Distribution 當成使用者 runtime workspace，也不得把其他 installation-specific locator 寫入 local ENV。
+## 新安裝必要輸入
+`distribution_install` 必須有：
+- 教師自己建立的可寫 Google Drive root URL。
 
-Distribution locator 只代表資源位置，不代表 authorization。所有寫入只能使用當次 runtime 實際提供的能力、authenticated user identity 與其實際 ACL。ENV 不得作為 credential。
+可選：installation name、owner label、Literature Library 設定。
 
-## Distribution Privacy Rule
+若 root 未提供、不可唯一識別或不可寫，停止，不猜測其他 root。
 
-Distribution 不應預設散布 installation owner 的私人 Brain 或 working data。`10_KNOWLEDGE_BASE`、`30_EXPERIENCE`、`40_ERROR_LOG`、`50_WORKSPACE`、`90_OUTPUT`、`98_REVIEW_LATER`、`99_ARCHIVE` 預設建立新的 local resource，不因 upstream 存在內容就自動複製。
+## 新安裝流程
+1. `resolve_distribution`
+   - 讀取官方 `00_EDUHARNESS_DISTRIBUTION.yaml`。
+2. `validate_manifest`
+   - 驗證 `manifest_kind=eduHarness-distribution`、edition、compatibility、required resources。
+3. `inspect_target`
+   - 列出教師提供的 Drive root，檢查現有內容與正式 ENV。
+4. `plan_changes`
+   - 建立 create/copy/reconstruct/generate-env resource plan。
+5. `human_gate_if_required`
+   - 只有涉及覆寫既有 managed resources、批次搬移/刪除等才需要 Human Gate。
+6. `create_structure`
+   - 建立缺少的 `00_ADMIN` 與標準 workspace folders。
+7. `install_managed_resources`
+   - Registry、Brain Index、State Builder、Audit Trace Contract、Trace Adapter、完整 Skill packages。
+8. `generate_env`
+   - 從 `00_EDUHARNESS_ENV_TEMPLATE.yaml` 語意產生教師自己的 `00_EDUHARNESS_ENV.yaml`。
+9. `verify`
+   - fresh-read ENV → Registry → runtime contracts → Skills；確認無 multiple ENV ambiguity、路徑都在教師自己的 installation。
+10. `finish`
+   - 全部 read-back PASS 才回報 `INSTALLATION_READY`。
 
-私人 Brain、學生個資、secrets、tokens、cookies、credentials、private keys 與 installation-specific working state 不得進入 Distribution。
+## Upgrade Contract
+### 原則
+升級只更新 Distribution-managed runtime resources；老師自己的資料不應被當作發行檔覆寫。
 
-## Resource Action Contract
+### Upgrade preflight
+1. 先讀既有正式 `00_EDUHARNESS_ENV.yaml`。
+2. 依 ENV fresh-read local Registry、runtime contracts、Skills root。
+3. 讀官方 Distribution Manifest。
+4. 確認 target Registry schema 在 active Kernel `registry_schema_support` 內。
+5. 確認 required Distribution resources 全部存在且可讀。
+6. 確認 installation root 唯一且可寫。
 
-- `copy`：複製單一來源資源到 destination，完成後必須讀回驗證。
-- `reconstruct`：依 Manifest 與可讀來源在 destination 重建完整 resource tree；對 Skill 必須以整個 Skill folder 為 package，保留 `SKILL.md` 以及其實際依賴的 `references/`、`templates/`、`assets/` 等 subresources。不得假設 runtime 一定有 recursive folder-copy API，也不得只複製 `SKILL.md`。
-- `create`：只建立 installation-side 新資源，不複製 upstream 私人內容。
-- `generate-env`：依實際 destination installation 產生 `00_EDUHARNESS_ENV.yaml`，不得直接複製 upstream 正式 ENV。
+任一 preflight 失敗即停止，不做 partial upgrade。
 
-## 必要輸入
-
-依模式決定。
-
-- `empty_bootstrap`：需要可唯一識別的目標 Google Drive 根目錄。
-- `distribution_install`：教師必須先建立並提供自己的 Google Drive installation root URL；runtime 必須能讀取該 root 並具有必要寫入能力。Distribution source 固定由 Project Kernel 宣告的官方 upstream 解析，不要求教師提供 Distribution URL，也不得代替教師猜測或自動選擇其他 Drive root。
-- `move`：需要可唯一識別的 source installation 與 destination root。
-- `repair`：需要可唯一識別的既有 installation root。
-
-若為新使用者，還可提供：
-- installation name
-- owner label
-- 是否啟用 Literature Library
-- Literature Library Drive root（若有）
-
-無法唯一識別目標根目錄時停止，不猜測。
-
-## 標準結構
-
-目標根目錄至少包含：
-
+### Upgrade preserve set
+預設不得覆寫：
 - `00_EDUHARNESS_ENV.yaml`
-- `00_ADMIN/`
+- 使用者 Knowledge / Experience / Error Log
+- 使用者 Templates
+- `50_WORKSPACE`
+- `80_SHARED_RESOURCES`
+- `90_OUTPUT`
+- `98_REVIEW_LATER`
+- `99_ARCHIVE`
+- Brain Index 內容（除非未來明確存在 schema migration，且另外通過 Human Gate）
+
+### Upgrade managed set
+可由 Distribution 更新：
+- `00_ADMIN/00_EDU_SKILL_REGISTRY.yaml`
+- `00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml`
+- `00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml`
+- `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
+- Distribution-managed `00_ADMIN/SKILLS/**` packages
+
+### Snapshot + Human Gate
+在任何 managed production file 被替換前：
+1. 將現行 Registry / runtime contracts / 受影響 Skill packages 建立 rollback snapshot 到 `ENV.workspace.work_area`。
+2. 顯示 upgrade diff scope、preserve set、rollback plan。
+3. 取得明確 Human Gate。
+
+「檢查更新」「同步」「繼續」本身不等於覆寫授權；若使用者已明確要求並核准此次 upgrade scope，才執行 managed overwrite。
+
+### Upgrade execution
+依 dependency-safe order：
+1. runtime contracts
+2. Registry
+3. complete Skill packages
+
+Skill 以 folder/package 為單位，不只複製 `SKILL.md`；所有 required references/templates/assets/subresources 必須一起保持完整。
+
+### Upgrade verification
+寫入後必須：
+1. 保持原正式 ENV 不變並重新 bootstrap。
+2. Registry schema / routing guard contract 符合 Manifest。
+3. Registry 內所有 Skill target 都能解析。
+4. State Builder reference 可讀。
+5. Audit Trace Contract / Trace Adapter reference 可讀。
+6. installed Skill count 與 Manifest expectation 相符。
+7. installation-specific Drive locator 不得出現在 ENV 以外的 Distribution-managed files。
+8. user data / workspace / output 未被覆寫。
+
+全數 PASS 才回報 `UPGRADE_READY`。
+
+### Rollback
+任何 verification failure：
+- 只 rollback 此次 upgrade 的 managed resources；
+- 使用 pre-upgrade snapshot 還原；
+- 不回滾/刪除教師自己的 ENV、Knowledge、Experience、Workspace、Output；
+- rollback 寫入同樣需要 Human Gate；
+- rollback 後重新 fresh bootstrap 驗證。
+
+## 標準 Installation 結構
+- `00_EDUHARNESS_ENV.yaml`
 - `00_ADMIN/00_EDU_SKILL_REGISTRY.yaml`
 - `00_ADMIN/01_BRAIN_INDEX.yaml`
+- `00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml`
+- `00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml`
+- `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
 - `00_ADMIN/SKILLS/`
 - `10_KNOWLEDGE_BASE/`
 - `20_TEMPLATES/`
@@ -99,125 +163,30 @@ Distribution 不應預設散布 installation owner 的私人 Brain 或 working d
 - `98_REVIEW_LATER/`
 - `99_ARCHIVE/`
 
-## 執行流程
+## Privacy / Portability
+- Distribution 不包含私人 Brain、學生個資、working traces、教師成果。
+- secrets/tokens/cookies/credentials/private keys 禁止保存。
+- installation-specific Drive URL/ID 只能存在正式 ENV。
+- 不假設 shell、Git CLI、recursive folder-copy、daemon 或 background loop；依當次工具能力執行。
 
-1. `select_mode`
-   - 判定 `empty_bootstrap`、`distribution_install`、`move` 或 `repair`。
+## Failure Codes
+- `INSTALL_ROOT_REQUIRED`
+- `DISTRIBUTION_NOT_FOUND`
+- `DISTRIBUTION_INVALID`
+- `SOURCE_UNAVAILABLE`
+- `RUNTIME_INCOMPATIBLE`
+- `INSTALL_ROOT_EXISTS`
+- `ENV_AMBIGUOUS`
+- `INSTALL_ENV_GENERATION_FAILED`
+- `INSTALL_ENV_INVALID`
+- `EDU_REGISTRY_UNAVAILABLE`
+- `BRAIN_INDEX_UNAVAILABLE`
+- `SKILL_PACKAGE_INCOMPLETE`
+- `SAVE_FAILED`
+- `SAVE_UNVERIFIED`
+- `UPGRADE_PREFLIGHT_FAILED`
+- `UPGRADE_VERIFICATION_FAILED`
+- `UPGRADE_ROLLBACK_FAILED`
 
-2. `resolve_distribution_if_required`
-   - 僅 `distribution_install` 執行；實際讀取 `00_EDUHARNESS_DISTRIBUTION.yaml`，不得依資料夾名稱猜測。
-
-3. `validate_manifest`
-   - 確認 schema、`manifest_kind == eduHarness-distribution`、edition、installer、strategy、required resources、env generation 與 verification contract。
-   - 不合法 → `DISTRIBUTION_INVALID`。
-
-4. `validate_distribution_resources`
-   - 實際確認所有 `required: true` 的來源存在且可讀；缺少 → `SOURCE_UNAVAILABLE`。
-
-5. `inspect_target`
-   - 實際列出目標 Drive 根目錄。
-   - 不因資料夾名稱相似就推定為 eduHarness installation。
-
-6. `check_existing_env`
-   - 尋找正式 `00_EDUHARNESS_ENV.yaml`。
-   - `00_EDUHARNESS_ENV_TEMPLATE.yaml` 只作模板，不視為正式 ENV。
-
-7. `plan_changes`
-   - Distribution install 依 Manifest 建立 `resource_plan`，區分 create / copy / reconstruct / generate / preserve / conflicts。
-   - 列出缺少資料夾、控制檔與預計建立/修改項目。
-   - 已存在內容不得直接覆蓋。
-
-8. `human_gate_if_destructive`
-   - 若需覆寫既有 ENV、Registry、Brain Index、Skill 或批次搬移資料，先取得使用者明確核准。
-
-9. `create_or_repair_structure`
-   - Distribution install 的 destination root 必須是教師在安裝指令中明確提供的可寫 Google Drive root；本模式不自動另建 root，也不得建立在 upstream Distribution scope。
-
-10. `execute_distribution_resource_plan`
-   - 僅 `distribution_install` 執行；依 dependency-safe 順序執行 create → copy → reconstruct → generate-env。
-   - 每一項只有工具成功且讀回驗證後才標記完成。
-   - Skill reconstruct 後必須列出 destination Skill folder，確認 `SKILL.md` 與所有 required subresources 均存在；遺失 → `SKILL_PACKAGE_INCOMPLETE`。
-   - 只建立缺少項目。
-   - 一般新安裝可建立標準空資料夾與初始控制檔。
-
-11. `create_env`
-   - 正式檔名固定為 `00_EDUHARNESS_ENV.yaml`。
-   - 填入該 installation 的 Drive root 與相對路徑。
-   - 個人/環境 URL 只放 ENV，不寫入 Project YAML。
-
-12. `initialize_registry_and_index`
-   - 建立或確認 EDU Registry 與 Brain Index。
-   - Registry 管 Skill；Brain Index 管 Knowledge / Template / Experience / Error / Shared Resource discovery。
-
-13. `install_core_meta_skills`
-   - 至少確認 `cloud-bootstrap` 可被 Registry 發現。
-   - 若使用者要求 GitHub→Cloud 移植能力，再確認 `github-to-cloud-skill-port`。
-
-14. `verify_locality`
-   - Distribution install 額外確認 ENV drive root、Registry、Brain Index 與 Skills resolver 均落在 destination installation scope；若仍錯誤指向 upstream → `INSTALL_ENV_INVALID`。
-
-15. `verify`
-   - 重新讀取 ENV。
-   - 依 ENV 實際讀取 Registry 與 Brain Index。
-   - 驗證路徑存在且不產生多個正式 ENV ambiguity。
-   - 對所有 installed Skill folders 驗證相對路徑依賴的 required subresources 完整，不能只驗證 `SKILL.md`。
-
-16. `finish`
-   - 只有所有必要寫入與讀回驗證成功，且重新從正式 ENV 完成 bootstrap 後，才能回報 `INSTALLATION_READY`。
-
-## ENV 規則
-
-正式 runtime anchor：
-
-`00_EDUHARNESS_ENV.yaml`
-
-模板：
-
-`00_EDUHARNESS_ENV_TEMPLATE.yaml`
-
-Portable Kernel 只搜尋正式 anchor；模板不得參與 runtime discovery。
-
-ENV 至少應定義：
-
-```yaml
-schema_version: 1
-env_kind: "eduHarness-cloud"
-installation:
-  edition: "cloud"
-workspace:
-  drive_root: "<actual Drive root>"
-  registry: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
-  brain_index: "00_ADMIN/01_BRAIN_INDEX.yaml"
-  skills: "00_ADMIN/SKILLS"
-```
-
-## 停止規則
-
-- `distribution_install` 未提供教師自己的 Drive root URL → `⏳ INSTALL_ROOT_REQUIRED`。
-- 目標 Drive 根目錄無法唯一確認或不可寫 → 停止。
-- 已存在多個正式 `00_EDUHARNESS_ENV.yaml` 且無法判定目標 → `❗ ENV_AMBIGUOUS`。
-- ENV 無法讀取 → `⏳ EDUHARNESS_ENV_UNAVAILABLE`。
-- Registry 無法建立/讀回 → `⏳ EDU_REGISTRY_UNAVAILABLE`。
-- Brain Index 無法建立/讀回 → `⏳ BRAIN_INDEX_UNAVAILABLE`。
-- 需要破壞性覆寫而未取得核准 → 停止。
-- 寫入後無法重新讀取驗證 → `⏳ SAVE_UNVERIFIED`。
-- Distribution 找不到 → `⏳ DISTRIBUTION_NOT_FOUND`。
-- Distribution Manifest 不合法 → `⏳ DISTRIBUTION_INVALID`。
-- Runtime 缺少必要安全操作能力 → `⏳ RUNTIME_INCOMPATIBLE`。
-- Installation root 衝突且無法安全處理 → `⏳ INSTALL_ROOT_EXISTS`。
-- ENV 生成失敗 → `⏳ INSTALL_ENV_GENERATION_FAILED`。
-- ENV 指向錯誤 resource scope → `⏳ INSTALL_ENV_INVALID`。
-
-## 核心規則
-
-**Project YAML 是可分享的 Portable Kernel；個人環境差異只進 ENV。**
-
-- Canonical Distribution 位於 Project Kernel 宣告的官方 GitHub upstream；Google Drive 僅作為使用者 runtime installation。
-- Distribution install 的教師 UX 固定為「教師先建 Drive root → 貼 Kernel → 在安裝指令中提供自己的 root URL」；不得要求教師提供 Distribution URL。
-- Distribution 與 Installation 必須維持不同 resource scope。
-- ENV 是 locator / installation configuration，不是 credential。
-- 新增 Skill / Knowledge 不應修改 Project YAML。
-- 不假設 runtime 具有 recursive folder-copy、shell、Git CLI、daemon 或其他未確認能力。
-- 所有完成宣稱必須建立在實際工具成功與 read-back verification。
-- 私人 Brain 與 installation working data 不得因 Distribution install 被自動散布。
-- 既有資料不得 blind overwrite。
+## Completion Rule
+只有工具實際寫入成功、目的地/parent 正確、read-back verification 全部通過後，才能宣稱 installation 或 upgrade 完成。

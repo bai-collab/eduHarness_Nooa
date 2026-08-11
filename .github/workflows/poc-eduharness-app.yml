@@ -7,6 +7,12 @@ on:
     paths:
       - "poc/eduharness-app-v0.1/**"
       - ".github/workflows/poc-eduharness-app.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "poc/eduharness-app-v0.1/**"
+      - ".github/workflows/poc-eduharness-app.yml"
   workflow_dispatch:
 
 jobs:
@@ -20,8 +26,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: poc/eduharness-app-v0.1/package-lock.json
       - run: npm install
       - run: npm run typecheck
       - run: npm test

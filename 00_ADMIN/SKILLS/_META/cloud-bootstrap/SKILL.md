@@ -32,6 +32,7 @@ description: >
 - GitHub Distribution 是唯讀散布來源；Google Drive 才是每位教師自己的 runtime installation。
 - Distribution locator 不代表寫入權限；所有寫入依當次 authenticated user / connector ACL。
 - 正式 ENV 永遠在教師自己的 Drive 產生，絕不複製他人的正式 ENV。
+- `10_KNOWLEDGE_BASE/課綱_各領域` 是 Distribution-managed curriculum resource；同一 Knowledge Base 內其他教師自訂內容仍屬 user-owned。
 
 ## Project Instructions 穩定性
 一般 Distribution upgrade **不得要求老師重新貼 Project Instructions**。
@@ -40,7 +41,7 @@ description: >
 - active Project Kernel 仍支援 target Registry schema；且
 - Distribution Manifest 沒有宣告 Kernel breaking change，
 
-就保留目前 Project Instructions，僅升級教師 Drive 中受管理的 Registry / runtime contracts / Skill packages。
+就保留目前 Project Instructions，僅升級教師 Drive 中受管理的 Registry / runtime contracts / Skill packages / curriculum resources。
 
 只有 Kernel 本身有 breaking governance/runtime change，才提出新的 Project Instructions migration，並在執行前取得 Human Gate。
 
@@ -67,12 +68,27 @@ description: >
    - 建立缺少的 `00_ADMIN` 與標準 workspace folders。
 7. `install_managed_resources`
    - Registry、Brain Index、State Builder、Audit Trace Contract、Trace Adapter、完整 Skill packages。
+   - reconstruct `10_KNOWLEDGE_BASE/課綱_各領域`，包含 `README_課綱索引.md` 與 Manifest 要求的各領域課綱檔。
 8. `generate_env`
    - 從 `00_EDUHARNESS_ENV_TEMPLATE.yaml` 語意產生教師自己的 `00_EDUHARNESS_ENV.yaml`。
 9. `verify`
-   - fresh-read ENV → Registry → runtime contracts → Skills；確認無 multiple ENV ambiguity、路徑都在教師自己的 installation。
+   - fresh-read ENV → Registry → Brain Index → runtime contracts → Skills → curriculum index/resources。
+   - 確認無 multiple ENV ambiguity、路徑都在教師自己的 installation、課綱可由 Brain Index 發現並按領域載入。
 10. `finish`
    - 全部 read-back PASS 才回報 `INSTALLATION_READY`。
+
+## Curriculum Resource Contract
+### Ownership
+- Distribution-managed：`10_KNOWLEDGE_BASE/課綱_各領域/**`。
+- User-owned：`10_KNOWLEDGE_BASE` 中上述 managed subtree 以外的教師自訂教材、校本資料、教學筆記與其他 Knowledge。
+
+### Loading
+- 一般教案任務不得預載全部課綱。
+- 先讀 `10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md`，再依主要領域與學習階段讀取必要檔案。
+- 跨領域或需要總綱時才加載額外課綱。
+
+### Missing resource
+若 curriculum index 或 Manifest 要求的必要領域檔缺失、不可讀或 reconstruct 不完整，停止並回報 `CURRICULUM_RESOURCE_INCOMPLETE`；不得宣稱 `INSTALLATION_READY`。
 
 ## Upgrade Contract
 ### 原則
@@ -80,7 +96,7 @@ description: >
 
 ### Upgrade preflight
 1. 先讀既有正式 `00_EDUHARNESS_ENV.yaml`。
-2. 依 ENV fresh-read local Registry、runtime contracts、Skills root。
+2. 依 ENV fresh-read local Registry、runtime contracts、Skills root、curriculum managed subtree。
 3. 讀官方 Distribution Manifest。
 4. 確認 target Registry schema 在 active Kernel `registry_schema_support` 內。
 5. 確認 required Distribution resources 全部存在且可讀。
@@ -91,26 +107,29 @@ description: >
 ### Upgrade preserve set
 預設不得覆寫：
 - `00_EDUHARNESS_ENV.yaml`
-- 使用者 Knowledge / Experience / Error Log
+- `10_KNOWLEDGE_BASE` 中 distribution-managed `課綱_各領域` 以外的 user-owned Knowledge
+- 使用者 Experience / Error Log
 - 使用者 Templates
 - `50_WORKSPACE`
 - `80_SHARED_RESOURCES`
 - `90_OUTPUT`
 - `98_REVIEW_LATER`
 - `99_ARCHIVE`
-- Brain Index 內容（除非未來明確存在 schema migration，且另外通過 Human Gate）
+- Brain Index 內容（除非 Distribution 明確包含必要的 portable index 更新；仍不得寫入 installation-specific locator 或私人 Brain content）
 
 ### Upgrade managed set
 可由 Distribution 更新：
 - `00_ADMIN/00_EDU_SKILL_REGISTRY.yaml`
+- `00_ADMIN/01_BRAIN_INDEX.yaml` 的 portable Distribution index
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml`
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml`
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
 - Distribution-managed `00_ADMIN/SKILLS/**` packages
+- `10_KNOWLEDGE_BASE/課綱_各領域/**`
 
 ### Snapshot + Human Gate
-在任何 managed production file 被替換前：
-1. 將現行 Registry / runtime contracts / 受影響 Skill packages 建立 rollback snapshot 到 `ENV.workspace.work_area`。
+在任何 managed production resource 被替換前：
+1. 將現行 Registry / Brain Index / runtime contracts / 受影響 Skill packages / managed curriculum subtree 建立 rollback snapshot 到 `ENV.workspace.work_area`。
 2. 顯示 upgrade diff scope、preserve set、rollback plan。
 3. 取得明確 Human Gate。
 
@@ -119,10 +138,13 @@ description: >
 ### Upgrade execution
 依 dependency-safe order：
 1. runtime contracts
-2. Registry
-3. complete Skill packages
+2. portable Brain Index
+3. Registry
+4. complete Skill packages
+5. managed curriculum resources
 
 Skill 以 folder/package 為單位，不只複製 `SKILL.md`；所有 required references/templates/assets/subresources 必須一起保持完整。
+Curriculum 只允許重建 `10_KNOWLEDGE_BASE/課綱_各領域` managed subtree，不得以整個 `10_KNOWLEDGE_BASE` 為 overwrite 單位。
 
 ### Upgrade verification
 寫入後必須：
@@ -132,16 +154,18 @@ Skill 以 folder/package 為單位，不只複製 `SKILL.md`；所有 required r
 4. State Builder reference 可讀。
 5. Audit Trace Contract / Trace Adapter reference 可讀。
 6. installed Skill count 與 Manifest expectation 相符。
-7. installation-specific Drive locator 不得出現在 ENV 以外的 Distribution-managed files。
-8. user data / workspace / output 未被覆寫。
+7. Brain Index 可解析 curriculum index。
+8. curriculum index 與全部必要領域課綱可讀。
+9. `10_KNOWLEDGE_BASE` 中 user-owned Knowledge 未被覆寫。
+10. installation-specific Drive locator 不得出現在 ENV 以外的 Distribution-managed files。
 
 全數 PASS 才回報 `UPGRADE_READY`。
 
 ### Rollback
 任何 verification failure：
 - 只 rollback 此次 upgrade 的 managed resources；
-- 使用 pre-upgrade snapshot 還原；
-- 不回滾/刪除教師自己的 ENV、Knowledge、Experience、Workspace、Output；
+- 使用 pre-upgrade snapshot 還原 Registry / Brain Index / runtime contracts / Skill packages / managed curriculum subtree；
+- 不回滾/刪除教師自己的 ENV、user-owned Knowledge、Experience、Workspace、Output；
 - rollback 寫入同樣需要 Human Gate；
 - rollback 後重新 fresh bootstrap 驗證。
 
@@ -154,6 +178,8 @@ Skill 以 folder/package 為單位，不只複製 `SKILL.md`；所有 required r
 - `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
 - `00_ADMIN/SKILLS/`
 - `10_KNOWLEDGE_BASE/`
+- `10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md`
+- `10_KNOWLEDGE_BASE/課綱_各領域/<required curriculum files>`
 - `20_TEMPLATES/`
 - `30_EXPERIENCE/`
 - `40_ERROR_LOG/`
@@ -181,6 +207,7 @@ Skill 以 folder/package 為單位，不只複製 `SKILL.md`；所有 required r
 - `INSTALL_ENV_INVALID`
 - `EDU_REGISTRY_UNAVAILABLE`
 - `BRAIN_INDEX_UNAVAILABLE`
+- `CURRICULUM_RESOURCE_INCOMPLETE`
 - `SKILL_PACKAGE_INCOMPLETE`
 - `SAVE_FAILED`
 - `SAVE_UNVERIFIED`
@@ -189,4 +216,4 @@ Skill 以 folder/package 為單位，不只複製 `SKILL.md`；所有 required r
 - `UPGRADE_ROLLBACK_FAILED`
 
 ## Completion Rule
-只有工具實際寫入成功、目的地/parent 正確、read-back verification 全部通過後，才能宣稱 installation 或 upgrade 完成。
+只有工具實際寫入成功、目的地/parent 正確、read-back verification 全部通過，且必要課綱可由 Brain Index 發現並讀取後，才能宣稱 installation 或 upgrade 完成。

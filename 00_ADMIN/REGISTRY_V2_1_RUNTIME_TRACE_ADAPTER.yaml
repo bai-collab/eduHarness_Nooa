@@ -1,0 +1,87 @@
+schema_version: "1.0"
+contract: "eduHarness Runtime Trace Adapter"
+status: active
+runtime_ssot: true
+
+scope:
+  registry_schema_major: 2
+  routing_guard_contract_version: "2.1"
+  audit_trace_contract_schema: "1.0"
+  runtime_targets: [chatgpt_web, gemini_spark]
+
+ownership:
+  emitter: runtime_orchestrator
+  state_builder_responsibility: "emit KeyPoint state + diagnostics only"
+  registry_responsibility: "declarative routing/typed-relation SSOT only"
+  trace_adapter_responsibility: "assemble auditable runtime events and apply persistence policy"
+
+trace_lifecycle:
+  start: "create opaque trace_id + task_scope_id at substantive routing start"
+  assemble: ephemeral_by_default
+  finalize: "after verification or safe stopping"
+  private_chain_of_thought: prohibited
+
+emission_points:
+  - before_selection
+  - after_provisional_selection
+  - after_each_route_evaluation
+  - after_each_handoff
+  - after_route_convergence
+  - after_requires_enhances_resolution
+  - after_final_skill_full_text_read
+  - at_human_gate_transition
+  - after_execution_or_safe_stop
+  - after_verification
+
+persistence_policy:
+  default: ephemeral_no_drive_write
+  persist_when_any:
+    - explicit_user_audit_request
+    - verification_FAIL
+    - verification_BLOCKED
+    - SKILL_ROUTE_LOOP
+    - REGISTRY_GRAPH_INVALID
+    - SOURCE_CONFLICT
+    - EXECUTION_PLAN_INVALID
+    - REPLAN_BLOCKED
+    - SAVE_FAILED
+    - SAVE_UNVERIFIED
+    - human_gate_transition_for_governance_or_irreversible_action
+    - production_or_governance_write_attempt
+  do_not_auto_persist_when:
+    - routine_success_without_audit_need
+    - simple_read_only_task
+    - normal_SAFE_STOP_without_material_diagnostic
+  destination_if_persisted: "ENV.workspace.work_area"
+  file_name_rule: "RUNTIME_TRACE_<YYYYMMDD>_<opaque_trace_id>.yaml"
+  identity_rule: "filename and trace_id must not encode user/student identity, class, email, or source title"
+
+privacy_policy:
+  input_storage: "minimal semantic summary + provenance refs"
+  prohibited: [private_chain_of_thought, hidden_reasoning, student_identifiers, credentials, secrets, tokens, private_keys]
+  persistence_redaction_required: true
+
+version_pinning:
+  required: [kernel_version, registry_revision, registry_schema_version, routing_guard_contract_version, state_builder_revision, state_builder_schema_version, audit_trace_contract_schema_version, trace_adapter_schema_version]
+
+route_identity:
+  primary_locator: "registry_revision + from_skill + evaluation + route_ordinal + to_skill"
+  audit_alias: optional
+
+failure_behavior:
+  trace_assembly_failure:
+    action: "do not change routing decision solely because trace serialization failed"
+    diagnostic: TRACE_ASSEMBLY_FAILED
+  persistence_failure:
+    action: "routing/execution remains governed by Primary Skill; report SAVE_FAILED when persistence was required"
+  prohibited_data_detected:
+    action: "redact or skip persistence; never persist prohibited payload"
+    diagnostic: TRACE_PRIVACY_BLOCKED
+
+human_gate_policy:
+  trace_only_ephemeral: not_required
+  routine_safe_trace_persistence_to_work_area: not_required
+  production_runtime_contract_creation_or_modification: required
+  Registry_observability_reference_change: required
+  student_identifiable_trace_persistence: required
+  deletion_or_bulk_move_of_traces: required

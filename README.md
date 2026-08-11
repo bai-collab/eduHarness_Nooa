@@ -4,6 +4,11 @@ Canonical Distribution for eduHarness Cloud, targeting ChatGPT Web and Gemini Sp
 
 This repository is the canonical distribution and feature-evolution source. Installation-specific Google Drive locators must not be stored here outside the ENV template placeholders.
 
+## 教師安裝入口
+
+- [ChatGPT 付費版新手安裝手冊 v1.0](docs/CHATGPT_PAID_INSTALL_GUIDE.md)
+- [技術版安裝指南](INSTALL.md)
+
 ## 為什麼要設計 eduHarness？
 
 一般使用 AI Chat 時，每次對話都像重新交代工作：規則、資料、流程與輸出方式常常要重講一次，結果也容易因對話不同而改變。
@@ -29,7 +34,4 @@ eduHarness_Nooa 的設計過程參考了下列公開資料與實作方向；這�
 
 此外，eduHarness_Nooa 依自身目標加入 Portable Kernel、ENV、Registry、Brain Index、Skill routing、Cloud installation、Human Gate 與輸出路由等結構，以支援 ChatGPT Web／Gemini Spark 的教師工作流程。
 
-## 教師安裝入口
 
-- [ChatGPT 付費版新手安裝手冊 v1.0](docs/CHATGPT_PAID_INSTALL_GUIDE.md)
-- [技術版安裝指南](INSTALL.md)

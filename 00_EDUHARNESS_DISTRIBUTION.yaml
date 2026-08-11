@@ -1,17 +1,24 @@
 schema_version: 1
 manifest_kind: "eduHarness-distribution"
-status: "active"
+status: "staging"
 
 distribution:
   id: "eduHarness_Nooa"
   name: "eduHarness_Nooa"
   edition: "cloud"
   version: "0.1.0"
-  channel: "stable"
+  channel: "pre-release"
   description: >
     eduHarness Cloud 的 Canonical Distribution Manifest；正式散布來源為 Project Kernel 宣告的官方 GitHub upstream。
     使用者應透過 cloud-bootstrap 將必要資源建立到自己的 Google Drive installation，
     不直接把本 Distribution 當作 runtime workspace。
+
+activation_gate:
+  required:
+    - "canonical_git_distribution_available"
+    - "canonical_resources_readable_from_project_kernel_upstream"
+    - "cross-account_installation_dry_run_passed"
+  rule: "Drive staging 完整不等於公開 Distribution 已啟用；上述條件未全數驗證前不得宣稱外部安裝 READY。"
 
 compatibility:
   installation_env_kind: "eduHarness-cloud"
@@ -31,7 +38,8 @@ distribution_contract:
     - "不得保存 secrets、tokens、cookies、credentials、private keys 或學生個資。"
 
 installation:
-  default_root_name: "eduHarness_Nooa"
+  root_provisioning: "user-created"
+  root_input: "teacher-provided-google-drive-url"
   installer_skill: "cloud-bootstrap"
   strategy: "reconstruct-from-manifest"
   existing_root_policy: "inspect-before-write"
@@ -44,88 +52,80 @@ upstream:
   rule: "Canonical Distribution 從 Project Kernel 宣告的 GitHub upstream 解析；教師只提供自己的 Google Drive root。"
 
 resources:
+  install_guide:
+    type: "file"
+    source: "INSTALL.md"
+    required: true
+    install_action: "manual-read"
   project_kernel:
     type: "file"
     source: "00_PROJECT_INSTRUCTIONS.yaml"
     required: true
     install_action: "manual-project-instructions"
     instruction: "教師先建立 ChatGPT Web Project，將本檔全文原封不動貼入 Project Instructions，再執行 Cloud installation 指令。"
-
   env_template:
     type: "file"
     source: "00_EDUHARNESS_ENV_TEMPLATE.yaml"
     required: true
     install_action: "generate-env"
-
   registry:
     type: "file"
     source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
     destination: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
     required: true
     install_action: "copy"
-
   brain_index:
     type: "file"
     source: "00_ADMIN/01_BRAIN_INDEX.yaml"
     destination: "00_ADMIN/01_BRAIN_INDEX.yaml"
     required: true
     install_action: "copy"
-
   skills:
     type: "folder"
     source: "00_ADMIN/SKILLS"
     destination: "00_ADMIN/SKILLS"
     required: true
     install_action: "reconstruct"
-
   knowledge_base:
     type: "folder"
     destination: "10_KNOWLEDGE_BASE"
     required: true
     install_action: "create"
-
   templates:
     type: "folder"
     destination: "20_TEMPLATES"
     required: true
     install_action: "create"
-
   experience:
     type: "folder"
     destination: "30_EXPERIENCE"
     required: true
     install_action: "create"
-
   error_log:
     type: "folder"
     destination: "40_ERROR_LOG"
     required: true
     install_action: "create"
-
   work_area:
     type: "folder"
     destination: "50_WORKSPACE"
     required: true
     install_action: "create"
-
   shared_resources:
     type: "folder"
     destination: "80_SHARED_RESOURCES"
     required: true
     install_action: "create"
-
   output:
     type: "folder"
     destination: "90_OUTPUT"
     required: true
     install_action: "create"
-
   review_later:
     type: "folder"
     destination: "98_REVIEW_LATER"
     required: true
     install_action: "create"
-
   archive:
     type: "folder"
     destination: "99_ARCHIVE"
@@ -164,6 +164,9 @@ verification:
     - "no_multiple_runtime_env_anchors"
     - "private_brain_not_copied"
     - "project_kernel_available_for_manual_install"
+    - "teacher_install_guide_available"
+    - "teacher_drive_root_explicitly_provided"
+    - "skill_folder_subresources_preserved"
     - "no_installation_specific_drive_locator_outside_env"
   ready_state: "INSTALLATION_READY"
 
@@ -179,4 +182,5 @@ failure:
   registry_unavailable: "EDU_REGISTRY_UNAVAILABLE"
   brain_index_unavailable: "BRAIN_INDEX_UNAVAILABLE"
   write_failed: "SAVE_FAILED"
+  skill_package_incomplete: "SKILL_PACKAGE_INCOMPLETE"
   verification_failed: "SAVE_UNVERIFIED"

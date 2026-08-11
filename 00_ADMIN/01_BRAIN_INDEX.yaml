@@ -50,11 +50,15 @@ sections:
     purpose: "已淘汰、舊版或不再使用但需保留追溯的內容"
 
 meta_skills:
+  - id: "edu:cloud-bootstrap"
+    path: "00_ADMIN/SKILLS/_META/cloud-bootstrap/SKILL.md"
+    purpose: "初始化、安裝、搬移或修復 eduHarness Cloud installation"
   - id: "edu:github-to-cloud-skill-port"
     path: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"
-    purpose: "從 GitHub Code Edition 移植/更新 Cloud Skill"
+    purpose: "從 Canonical Distribution 同步 Cloud Skill，或依使用者明確要求從 legacy Code Edition 移植/更新"
 
 index_rules:
   - "新增 Skill 後，正式身份以 00_EDU_SKILL_REGISTRY.yaml 為準。"
-  - "新增 knowledge / experience / error 項目後才更新本索引。"
+  - "單純新增或同步 Skill 不更新本索引；新增 knowledge / template / experience / error / shared resource 索引時才更新。"
+  - "所有 installation-specific Google Drive locator 只由正式 ENV 提供；本 Index 只保存相對 path / logical reference。"
   - "搜尋到檔名不代表已讀取內容；執行前仍需實際讀取檔案全文。"

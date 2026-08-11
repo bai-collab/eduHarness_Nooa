@@ -23,6 +23,18 @@ runtime:
   targets: [chatgpt_web, gemini_spark]
   rule: "以當次 tools/Connected Apps/權限為準；不得假設 shell/Git CLI/Node.js/daemon/background loop；Skill 描述程序，平台操作由 runtime adapter/tool 實現。"
 
+installation_entry:
+  trigger: "explicit-only"
+  when:
+    - "使用者明確要求初始化/安裝 eduHarness Cloud，且提供自己的 Google Drive root URL。"
+  source: "upstream repository + 00_EDUHARNESS_DISTRIBUTION.yaml"
+  sequence: [validate_user_root, resolve_upstream_distribution, load_cloud_bootstrap, plan_installation, human_gate_if_required, install, verify_from_env]
+  rules:
+    - "首次安裝在正式 ENV 尚不存在時，installation_entry 優先於一般 bootstrap；不得因 ENV_NOT_FOUND 阻擋明確安裝請求。"
+    - "教師必須先建立自己的可寫 Google Drive root 並提供 URL；不得猜測或改用他人的 Drive root。"
+    - "安裝完成後必須回到一般 bootstrap，從新建立的正式 ENV 重新驗證。"
+    - "非明確安裝請求不得繞過 ENV → Registry → Brain Index 的一般 runtime contract。"
+
 bootstrap:
   env: "00_EDUHARNESS_ENV.yaml"
   template: "00_EDUHARNESS_ENV_TEMPLATE.yaml"
@@ -32,7 +44,8 @@ bootstrap:
   sequence: [search_env, validate_env, resolve_workspace, load_registry_if_required, load_brain_index_if_required]
   rules:
     - "需 eduHarness Drive 資源先讀正式 ENV；Template 不得當 ENV。"
-    - "ENV 找不到/不合法/無法唯一判定即停止，不猜 Drive root；installation URL/paths 只由 ENV 提供。"
+    - "一般 runtime：ENV 找不到/不合法/無法唯一判定即停止，不猜 Drive root；installation URL/paths 只由 ENV 提供。"
+    - "例外僅限 installation_entry：使用者明確要求首次安裝並直接提供自己的 Drive root URL 時，可在 ENV 尚不存在前執行安裝程序。"
 
 routing:
   - "需 workflow/領域能力/Skill 管理/受控寫入：ENV → 最新 Registry → route。"
@@ -82,11 +95,11 @@ extension:
   - "Drive root/installation path/external library 啟停或 URL 改 ENV。"
   - "只有 bootstrap/discovery、全域 planning/execution/evidence、runtime、Human Gate、安全/failure governance 根本改變才改 Project。"
 
-failure_codes: [EDUHARNESS_ENV_NOT_FOUND, ENV_AMBIGUOUS, EDUHARNESS_ENV_INVALID, EDU_REGISTRY_UNAVAILABLE, BRAIN_INDEX_UNAVAILABLE, SKILL_UNAVAILABLE, SOURCE_UNAVAILABLE, ACCESS_UNAVAILABLE, RUNTIME_INCOMPATIBLE, SOURCE_CONFLICT, SKILL_DEPENDENCY_CYCLE, EXECUTION_PLAN_INVALID, REPLAN_BLOCKED, SAVE_FAILED]
+failure_codes: [EDUHARNESS_ENV_NOT_FOUND, ENV_AMBIGUOUS, EDUHARNESS_ENV_INVALID, EDU_REGISTRY_UNAVAILABLE, BRAIN_INDEX_UNAVAILABLE, SKILL_UNAVAILABLE, SOURCE_UNAVAILABLE, ACCESS_UNAVAILABLE, RUNTIME_INCOMPATIBLE, SOURCE_CONFLICT, SKILL_DEPENDENCY_CYCLE, EXECUTION_PLAN_INVALID, REPLAN_BLOCKED, SAVE_FAILED, DISTRIBUTION_NOT_FOUND, DISTRIBUTION_INVALID, INSTALL_ROOT_REQUIRED, INSTALL_ENV_INVALID, SKILL_PACKAGE_INCOMPLETE, SAVE_UNVERIFIED]
 
 upstream: {family: "eduHarness_Nooa", repository: "https://github.com/bai-collab/eduHarness_Nooa.git", branch: "main"}
 
 final_rule: >
   Project=Portable Kernel+planning/replanning；ENV=installation；Registry=能力/routing；
-  Skill=程序；Brain Index=知識/記憶；Drive=Cloud runtime；GitHub=功能演進。
+  Skill=程序；Brain Index=知識/記憶；Drive=使用者 Cloud runtime；GitHub=Canonical Distribution+功能演進。
   00_PROJECT_INSTRUCTIONS.yaml 是唯一 Canonical Kernel，可原封不動貼入 Project Instructions 並分享。

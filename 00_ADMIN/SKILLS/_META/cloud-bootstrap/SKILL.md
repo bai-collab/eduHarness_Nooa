@@ -59,7 +59,7 @@ Distribution 不應預設散布 installation owner 的私人 Brain 或 working d
 ## Resource Action Contract
 
 - `copy`：複製單一來源資源到 destination，完成後必須讀回驗證。
-- `reconstruct`：依 Manifest 與可讀來源在 destination 重建結構與內容；不得假設 runtime 一定有 recursive folder-copy API。
+- `reconstruct`：依 Manifest 與可讀來源在 destination 重建完整 resource tree；對 Skill 必須以整個 Skill folder 為 package，保留 `SKILL.md` 以及其實際依賴的 `references/`、`templates/`、`assets/` 等 subresources。不得假設 runtime 一定有 recursive folder-copy API，也不得只複製 `SKILL.md`。
 - `create`：只建立 installation-side 新資源，不複製 upstream 私人內容。
 - `generate-env`：依實際 destination installation 產生 `00_EDUHARNESS_ENV.yaml`，不得直接複製 upstream 正式 ENV。
 
@@ -68,7 +68,7 @@ Distribution 不應預設散布 installation owner 的私人 Brain 或 working d
 依模式決定。
 
 - `empty_bootstrap`：需要可唯一識別的目標 Google Drive 根目錄。
-- `distribution_install`：需要可唯一識別且可讀的 Distribution source，以及 runtime 對 authenticated user's Google Drive 具必要寫入能力。使用者未指定目標 root 時，可依 Manifest 的 `installation.default_root_name` 建立新 root；若同名或疑似既有 installation 已存在，不得直接覆寫。
+- `distribution_install`：教師必須先建立並提供自己的 Google Drive installation root URL；runtime 必須能讀取該 root 並具有必要寫入能力。Distribution source 固定由 Project Kernel 宣告的官方 upstream 解析，不要求教師提供 Distribution URL，也不得代替教師猜測或自動選擇其他 Drive root。
 - `move`：需要可唯一識別的 source installation 與 destination root。
 - `repair`：需要可唯一識別的既有 installation root。
 
@@ -131,11 +131,12 @@ Distribution 不應預設散布 installation owner 的私人 Brain 或 working d
    - 若需覆寫既有 ENV、Registry、Brain Index、Skill 或批次搬移資料，先取得使用者明確核准。
 
 9. `create_or_repair_structure`
-   - Distribution install 的 destination root 必須位於 authenticated user's 可寫 workspace，不得建立在 upstream Distribution scope。
+   - Distribution install 的 destination root 必須是教師在安裝指令中明確提供的可寫 Google Drive root；本模式不自動另建 root，也不得建立在 upstream Distribution scope。
 
 10. `execute_distribution_resource_plan`
    - 僅 `distribution_install` 執行；依 dependency-safe 順序執行 create → copy → reconstruct → generate-env。
    - 每一項只有工具成功且讀回驗證後才標記完成。
+   - Skill reconstruct 後必須列出 destination Skill folder，確認 `SKILL.md` 與所有 required subresources 均存在；遺失 → `SKILL_PACKAGE_INCOMPLETE`。
    - 只建立缺少項目。
    - 一般新安裝可建立標準空資料夾與初始控制檔。
 
@@ -159,9 +160,10 @@ Distribution 不應預設散布 installation owner 的私人 Brain 或 working d
    - 重新讀取 ENV。
    - 依 ENV 實際讀取 Registry 與 Brain Index。
    - 驗證路徑存在且不產生多個正式 ENV ambiguity。
+   - 對所有 installed Skill folders 驗證相對路徑依賴的 required subresources 完整，不能只驗證 `SKILL.md`。
 
 16. `finish`
-   - 只有所有必要寫入與讀回驗證成功後，才能回報 `READY`。
+   - 只有所有必要寫入與讀回驗證成功，且重新從正式 ENV 完成 bootstrap 後，才能回報 `INSTALLATION_READY`。
 
 ## ENV 規則
 
@@ -191,7 +193,8 @@ workspace:
 
 ## 停止規則
 
-- 目標 Drive 根目錄無法唯一確認 → 停止。
+- `distribution_install` 未提供教師自己的 Drive root URL → `⏳ INSTALL_ROOT_REQUIRED`。
+- 目標 Drive 根目錄無法唯一確認或不可寫 → 停止。
 - 已存在多個正式 `00_EDUHARNESS_ENV.yaml` 且無法判定目標 → `❗ ENV_AMBIGUOUS`。
 - ENV 無法讀取 → `⏳ EDUHARNESS_ENV_UNAVAILABLE`。
 - Registry 無法建立/讀回 → `⏳ EDU_REGISTRY_UNAVAILABLE`。
@@ -210,6 +213,7 @@ workspace:
 **Project YAML 是可分享的 Portable Kernel；個人環境差異只進 ENV。**
 
 - Canonical Distribution 位於 Project Kernel 宣告的官方 GitHub upstream；Google Drive 僅作為使用者 runtime installation。
+- Distribution install 的教師 UX 固定為「教師先建 Drive root → 貼 Kernel → 在安裝指令中提供自己的 root URL」；不得要求教師提供 Distribution URL。
 - Distribution 與 Installation 必須維持不同 resource scope。
 - ENV 是 locator / installation configuration，不是 credential。
 - 新增 Skill / Knowledge 不應修改 Project YAML。
@@ -217,4 +221,3 @@ workspace:
 - 所有完成宣稱必須建立在實際工具成功與 read-back verification。
 - 私人 Brain 與 installation working data 不得因 Distribution install 被自動散布。
 - 既有資料不得 blind overwrite。
-- 未知資訊不得自行補完。

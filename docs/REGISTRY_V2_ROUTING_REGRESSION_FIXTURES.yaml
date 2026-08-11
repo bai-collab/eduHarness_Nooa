@@ -1,0 +1,146 @@
+schema_version: 1
+suite: "eduHarness Registry v1 vs v2 shadow routing regression"
+status: "test-fixtures"
+source_v1: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+source_v2: "docs/REGISTRY_V2_SHADOW.yaml"
+
+cases:
+  - id: RP01
+    task: "撰寫一般教案"
+    signals: ["教案撰寫"]
+    expected_primary_v1: "lesson-plan-authoring"
+    expected_primary_v2: "edu:lesson-plan-authoring"
+    expected_relation_behavior_v2: {requires: [], enhances: [], route: null}
+    expected_classification: equivalent
+
+  - id: RP02
+    task: "將既有教案做分層差異化"
+    signals: ["既有教案差異化"]
+    expected_primary_v1: "lesson-differentiation"
+    expected_primary_v2: "edu:lesson-differentiation"
+    expected_relation_behavior_v2: {requires: [], enhances: [], route: null}
+    expected_classification: equivalent
+
+  - id: RP03
+    task: "要求差異化，但沒有來源教案"
+    signals: ["教案差異化", "no_source_lesson"]
+    expected_primary_v1: "lesson-differentiation"
+    expected_primary_v2: "edu:lesson-differentiation"
+    expected_route_target_v1: "lesson-plan-authoring"
+    expected_route_target_v2: "edu:lesson-plan-authoring"
+    expected_classification: equivalent-with-typed-handoff
+
+  - id: RP04
+    task: "建立數位學習精進教案，已有完整教案"
+    signals: ["數位學習精進教案", "existing_complete_lesson"]
+    expected_primary_v1: "digital-learning-lesson-plan"
+    expected_primary_v2: "edu:digital-learning-lesson-plan"
+    v1_dependency_load: ["lesson-plan-authoring"]
+    v2_requires: []
+    v2_route: null
+    expected_classification: expected-improvement
+    rationale: "v1 always loads lesson-plan-authoring; Skill text only requires routing when complete new lesson content is needed."
+
+  - id: RP05
+    task: "建立數位學習精進教案，但需要補完整新教案"
+    signals: ["數位學習精進教案", "complete_new_lesson_content_needed"]
+    expected_primary_v1: "digital-learning-lesson-plan"
+    expected_primary_v2: "edu:digital-learning-lesson-plan"
+    v1_dependency_load: ["lesson-plan-authoring"]
+    v2_route: "edu:lesson-plan-authoring"
+    expected_classification: equivalent-outcome-improved-semantics
+
+  - id: RP06
+    task: "從教材與學習目標建立完整教育 Web 遊戲工作流"
+    signals: ["教育 Web 教學遊戲工作流"]
+    expected_primary_v1: "educational-web-game-workflow"
+    expected_primary_v2: "edu:educational-web-game-workflow"
+    v1_dependency_load: ["material-to-quest-game"]
+    v2_requires: ["edu:material-to-quest-game"]
+    expected_classification: equivalent-typed-requires
+
+  - id: RP07
+    task: "教育 Web 遊戲工作流中只需要 physical/both 規格"
+    signals: ["教育 Web 教學遊戲工作流", "physical_or_both"]
+    expected_primary_v1: "educational-web-game-workflow"
+    expected_primary_v2: "edu:educational-web-game-workflow"
+    v2_requires: ["edu:material-to-quest-game"]
+    v2_route: "edu:material-to-quest-game"
+    expected_classification: review-needed
+    risk: "requires then route to same target may cause unnecessary pre-load before handoff; consider early route evaluation."
+
+  - id: RP08
+    task: "把數學教材改寫成臆測五階段教案，任務需要反例與推理驗證"
+    signals: ["臆測五階段", "reasoning_policy.activation"]
+    expected_primary_v1: "conjecturing-five-stage"
+    expected_primary_v2: "edu:conjecturing-five-stage"
+    v1_dependency_load: ["reasoning-kernel"]
+    v2_enhances: ["edu:reasoning-kernel"]
+    expected_classification: expected-improvement-pending-semantic-review
+
+  - id: RP09
+    task: "把數學教材改寫成臆測五階段教案，但不出現額外 reasoning activation"
+    signals: ["臆測五階段"]
+    expected_primary_v1: "conjecturing-five-stage"
+    expected_primary_v2: "edu:conjecturing-five-stage"
+    v1_dependency_load: ["reasoning-kernel"]
+    v2_enhances: []
+    expected_classification: semantic-difference-review-needed
+    risk: "cutover requires deciding whether reasoning-kernel is truly mandatory for every conjecturing-five-stage execution."
+
+  - id: RP10
+    task: "讀既有臆測五階段教案，一對一引導學生進入效化階段"
+    signals: ["臆測五階段學習引導", "stage_3_validation"]
+    expected_primary_v1: "conjecturing-five-stage-facilitator"
+    expected_primary_v2: "edu:conjecturing-five-stage-facilitator"
+    v1_dependency_load: ["reasoning-kernel"]
+    v2_enhances: ["edu:reasoning-kernel"]
+    expected_classification: expected-improvement
+
+  - id: RP11
+    task: "讀既有臆測五階段教案，一對一學生尚在造例階段"
+    signals: ["臆測五階段學習引導", "stage_1_example"]
+    expected_primary_v1: "conjecturing-five-stage-facilitator"
+    expected_primary_v2: "edu:conjecturing-five-stage-facilitator"
+    v1_dependency_load: ["reasoning-kernel"]
+    v2_enhances: []
+    expected_classification: expected-improvement
+
+  - id: RP12
+    task: "學生引導模式但缺少既有五階段教案，需要先設計教案"
+    signals: ["臆測五階段學習引導", "lesson_design_needed"]
+    expected_primary_v1: "conjecturing-five-stage-facilitator"
+    expected_primary_v2: "edu:conjecturing-five-stage-facilitator"
+    expected_route_target_v1: "conjecturing-five-stage"
+    expected_route_target_v2: "edu:conjecturing-five-stage"
+    expected_classification: equivalent-with-typed-handoff
+
+  - id: RP13
+    task: "在臆測教案與學生引導間重複切換，但 state 沒有變化"
+    signals: ["existing_five_stage_lesson_for_student_facilitation", "lesson_design_needed", "unchanged_state"]
+    expected_v1: "no formal route-loop guard in Registry schema"
+    expected_v2: "stop with SKILL_ROUTE_LOOP after repeated node-state or max_route_hops"
+    expected_classification: expected-improvement
+
+  - id: RP14
+    task: "數位教案正式送件"
+    signals: ["數位學習精進教案", "正式送件"]
+    expected_primary_v2: "edu:digital-learning-lesson-plan"
+    expected_human_gate_v2: true
+    expected_classification: preserved-safety
+
+  - id: RP15
+    task: "學生臆測引導涉及可識別學習紀錄"
+    signals: ["臆測五階段學習引導", "學生個資或可識別學習紀錄"]
+    expected_primary_v2: "edu:conjecturing-five-stage-facilitator"
+    expected_human_gate_v2: true
+    expected_classification: preserved-safety
+
+  - id: RP16
+    task: "教材轉闖關遊戲且需要分鏡"
+    signals: ["教材轉闖關遊戲", "storyboard_needed"]
+    expected_primary_v1: "material-to-quest-game"
+    expected_primary_v2: "edu:material-to-quest-game"
+    expected_route_target_v1: "visual-art-storyboard"
+    expected_route_target_v2: "edu:visual-art-storyboard"
+    expected_classification: equivalent-with-typed-handoff

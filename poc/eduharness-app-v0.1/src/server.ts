@@ -138,7 +138,7 @@ export function createEduHarnessServer(storage: StorageAdapter): McpServer {
     {
       title: "Write eduHarness file",
       description:
-        "Use this when the user has authorized creating or replacing one UTF-8 text file in their eduHarness workspace. Do not use for deletes or cross-workspace copies.",
+        "Use this when the user has authorized creating or replacing one UTF-8 text file in their eduHarness workspace. Replacing an existing file can destroy prior content; do not use for deletes or cross-workspace copies.",
       inputSchema: z.object({
         workspace_id: workspaceIdSchema,
         path: pathSchema,
@@ -146,7 +146,7 @@ export function createEduHarnessServer(storage: StorageAdapter): McpServer {
       }),
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: false,
       },

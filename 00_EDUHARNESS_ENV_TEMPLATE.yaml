@@ -39,11 +39,11 @@ runtime_preferences:
     - gemini_spark
 
 setup_instructions:
-  - "複製此模板後，將檔名改為 00_EDUHARNESS_ENV.yaml。"
-  - "填入自己的 eduHarness Cloud Google Drive 根目錄 URL。"
+  - "標準安裝由 cloud-bootstrap 依教師在安裝指令中提供的 Google Drive root URL 產生正式 00_EDUHARNESS_ENV.yaml；教師不需手動複製或改名本模板。"
+  - "若使用 manual fallback，才複製此模板、將檔名改為 00_EDUHARNESS_ENV.yaml，並填入自己的 eduHarness Cloud Google Drive 根目錄 URL。"
   - "若沒有 Literature Library，保持 enabled: false；不需要填 literature drive_root。"
   - "若有自己的 Literature Library，改為 enabled: true 並填入其 Drive root。"
-  - "不要修改 Project YAML 來填個人 Drive URL。"
+  - "不要修改 Project YAML、Registry、Brain Index 或 Skill 來填個人 Drive URL；installation-specific locator 只放正式 ENV。"
 
 rules:
   - "此模板不是 runtime ENV；正式環境只認 00_EDUHARNESS_ENV.yaml。"

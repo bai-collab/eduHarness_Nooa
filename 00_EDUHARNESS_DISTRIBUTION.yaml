@@ -90,10 +90,18 @@ upgrade_contract:
   snapshot:
     required_before_replace: true
     destination: "ENV.workspace.work_area"
-    scope: [registry, runtime_contracts, managed_skill_packages, managed_curriculum_resources]
+    scope: [registry, runtime_contracts, managed_skill_packages, managed_curriculum_resources, brain_index_when_migrated]
+  brain_index_policy:
+    default: "preserve"
+    migrations:
+      - id: "curriculum_standards_index_v1"
+        when: "curriculum_standards index entry missing"
+        mode: "additive-merge"
+        preserve_existing_entries: true
+        source: "00_ADMIN/01_BRAIN_INDEX.yaml"
   preserve:
     - "00_EDUHARNESS_ENV.yaml"
-    - "01_BRAIN_INDEX.yaml unless explicit schema migration is required"
+    - "01_BRAIN_INDEX.yaml except explicitly declared additive migration entries"
     - "10_KNOWLEDGE_BASE user-owned content outside distribution-managed curriculum resources"
     - "20_TEMPLATES user content"
     - "30_EXPERIENCE"
@@ -110,19 +118,21 @@ upgrade_contract:
     - "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml"
     - "distribution-managed Skill packages"
     - "10_KNOWLEDGE_BASE/課綱_各領域"
+    - "declared Brain Index additive migration entries only"
   verify:
     - "fresh bootstrap from unchanged local ENV"
     - "Registry schema=2 and routing guard contract=2.1"
     - "all Registry Skill targets resolve"
     - "State Builder and observability references resolve"
+    - "Brain Index curriculum entry resolves without removing pre-existing entries"
     - "curriculum index and all required domain curriculum resources resolve"
     - "user-owned Knowledge outside distribution-managed curriculum resources is preserved"
     - "no installation-specific locator leaked from Distribution"
   rollback:
     trigger: "any verification failure"
-    action: "restore only managed resources from snapshot; preserve ENV and user data"
+    action: "restore only managed resources and any migrated Brain Index entry from snapshot; preserve ENV and user data"
   human_gate:
-    required_before: ["replace managed production files", "bulk Skill package overwrite", "managed curriculum overwrite", "rollback overwrite"]
+    required_before: ["replace managed production files", "bulk Skill package overwrite", "managed curriculum overwrite", "Brain Index migration write", "rollback overwrite"]
 
 distribution_privacy:
   never_distribute:
@@ -144,6 +154,8 @@ verification:
     - "audit_trace_contract_readable"
     - "trace_adapter_readable"
     - "brain_index_readable"
+    - "brain_index_curriculum_entry_resolves"
+    - "brain_index_existing_entries_preserved"
     - "skills_root_accessible"
     - "installed_cloud_skills_count_17"
     - "skill_folder_subresources_preserved"
@@ -167,6 +179,7 @@ failure:
   env_invalid: "INSTALL_ENV_INVALID"
   registry_unavailable: "EDU_REGISTRY_UNAVAILABLE"
   brain_index_unavailable: "BRAIN_INDEX_UNAVAILABLE"
+  brain_index_migration_failed: "BRAIN_INDEX_MIGRATION_FAILED"
   curriculum_resource_incomplete: "CURRICULUM_RESOURCE_INCOMPLETE"
   write_failed: "SAVE_FAILED"
   skill_package_incomplete: "SKILL_PACKAGE_INCOMPLETE"

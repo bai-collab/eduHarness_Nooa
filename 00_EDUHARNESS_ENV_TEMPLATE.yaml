@@ -1,52 +1,48 @@
-schema_version: 1
+schema_version: 2
 env_kind: "eduHarness-cloud"
 status: "template"
 
 installation:
   name: "<USER_FILL_INSTALLATION_NAME>"
   edition: "cloud"
-  owner_label: "<USER_FILL_OWNER_LABEL>"
+  owner_label: "<OPTIONAL_OWNER_LABEL>"
 
-workspace:
-  root_mode: "explicit"
-  drive_root: "<USER_FILL_EDUHARNESS_DRIVE_ROOT_URL>"
+control_plane:
+  provider: "<CONTROL_PLANE_PROVIDER>"
+  root: "<CONTROL_PLANE_ROOT_LOCATOR>"
+  registry: "<REGISTRY_LOCATOR>"
+  brain_index: "<BRAIN_INDEX_LOCATOR>"
+  artifact_index: "<ARTIFACT_INDEX_LOCATOR>"
 
-  admin: "00_ADMIN"
-  registry: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
-  brain_index: "00_ADMIN/01_BRAIN_INDEX.yaml"
-  skills: "00_ADMIN/SKILLS"
-  knowledge_base: "10_KNOWLEDGE_BASE"
-  templates: "20_TEMPLATES"
-  experience: "30_EXPERIENCE"
-  error_log: "40_ERROR_LOG"
-  work_area: "50_WORKSPACE"
-  shared_resources: "80_SHARED_RESOURCES"
-  output: "90_OUTPUT"
-  review_later: "98_REVIEW_LATER"
-  archive: "99_ARCHIVE"
+storage:
+  provider: "<STORAGE_PROVIDER>"
+  root: "<STORAGE_ROOT_LOCATOR>"
+  artifacts: "<ARTIFACTS_LOCATOR>"
+  output: "<OUTPUT_LOCATOR>"
+  work_area: "<WORK_AREA_LOCATOR>"
 
-external_libraries:
-  literature_library:
-    enabled: false
-    namespace: "lit"
-    drive_root: "<OPTIONAL_USER_FILL_LITERATURE_LIBRARY_DRIVE_ROOT_URL>"
-    registry: "00_ADMIN/00_SKILL_REGISTRY.yaml"
-    loading: "on-demand-only"
+runtime:
+  state_persistence: "ephemeral"
+  primary_targets: [chatgpt_web, gemini_spark]
 
-runtime_preferences:
-  primary_targets:
-    - chatgpt_web
-    - gemini_spark
+external_libraries: {}
+
+provider_profiles:
+  default:
+    control_plane: "notion"
+    storage: "dropbox"
+  optional_storage_providers: [google_drive]
 
 setup_instructions:
-  - "標準安裝由 cloud-bootstrap 依教師在安裝指令中提供的 Google Drive root URL 產生正式 00_EDUHARNESS_ENV.yaml；教師不需手動複製或改名本模板。"
-  - "若使用 manual fallback，才複製此模板、將檔名改為 00_EDUHARNESS_ENV.yaml，並填入自己的 eduHarness Cloud Google Drive 根目錄 URL。"
-  - "若沒有 Literature Library，保持 enabled: false；不需要填 literature drive_root。"
-  - "若有自己的 Literature Library，改為 enabled: true 並填入其 Drive root。"
-  - "不要修改 Project YAML、Registry、Brain Index 或 Skill 來填個人 Drive URL；installation-specific locator 只放正式 ENV。"
+  - "此模板不是 runtime ENV；正式 installation 必須建立自己的正式 ENV。"
+  - "Bootstrap Descriptor 是 installation entry；Descriptor 定位正式 ENV，ENV 再定位 Control Plane 與 Storage resources。"
+  - "Default profile 為 Notion Control Plane + Dropbox Storage；這是預設 implementation，不是 Kernel 寫死的唯一 provider。"
+  - "Google Drive 可作 optional/legacy storage provider；首次安裝不得要求使用者先提供 Google Drive root。"
+  - "不得把其他 installation 的 Notion page/database ID、Dropbox stable ID、Drive URL/ID 或其他 provider locator 複製到自己的正式 ENV。"
+  - "不要修改 Project Kernel、Registry、Brain Index、Artifact Index 或 Skill 來填 installation-specific locator。"
 
 rules:
-  - "此模板不是 runtime ENV；正式環境只認 00_EDUHARNESS_ENV.yaml。"
-  - "個人 Drive URL 與外部 Library URL 只放 ENV。"
-  - "Skill 與 Knowledge 擴充由 Registry / Brain Index 管理，不修改 Project YAML。"
-  - "不得保存 secrets、tokens、cookies、credentials、private keys 或學生個資。"
+  - "正式 ENV 只保存 installation config/locator，不保存 secrets、tokens、cookies、credentials、private keys 或學生個資。"
+  - "Registry / Brain Index / Artifact Index 使用 logical reference 與 provider-neutral contract；provider-specific identity 只出現在 installation/control-plane records。"
+  - "Runtime State 預設 ephemeral；working state 不因 ENV 存在而自動持久化。"
+  - "Provider capability 以當次 runtime tools / Connected Apps / ACL 為準。"

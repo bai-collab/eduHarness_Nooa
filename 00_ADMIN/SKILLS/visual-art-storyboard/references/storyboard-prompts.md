@@ -1,36 +1,54 @@
-# 分鏡提示與八格契約
+# Storyboard Prompts
 
-## `/gb` 快捷格式
-`/gb 根據以下內容產生八格連續分鏡，保持角色一致，標示鏡頭方向、人物動作與場景變化：……`
+## Activation
+- `/gb`：使用者已明確啟用八格分鏡，不再詢問。
+- 明確要求運鏡八格、連續鏡頭、PREVIS → storyboard-on。
+- 一般生圖維持 art-only。
 
-`/gb` 代表使用者已明確啟用分鏡，不再詢問。
+## Shared Preconditions
+先完成主 Skill 的 Visual Spec、identity anchors、hard constraints 與必要 structural pass，再進入分鏡。八格不得重新定義角色 identity。
 
-## 電影預演版本
-```text
-Create a cinematic PREVIS storyboard with 8 continuous motion frames.
-Keep character identity, costume, props, lighting direction, screen direction,
-and spatial continuity consistent. Label shot size, camera movement, character
-action, scene change, narrative purpose, and transition cue for every frame.
-```
+## 八格契約
+每格標示：
+- 景別
+- 鏡頭方向／運動
+- 角色動作
+- 場景變化
+- 敘事目的
+- 銜接點
 
-## Pixel Art 版本
-```text
-Create an 8-panel cinematic pixel art storyboard sequence.
-Keep the same character silhouette, proportions, costume, palette, pixel density,
-lighting direction, screen direction, and scene layout across all panels.
-Show one continuous action with clear camera and pose progression.
-```
+## Continuity Anchors
+- same character identity
+- costume / props
+- lighting direction
+- screen direction
+- spatial axis
+- object location
+- action phase
 
-## 八格表格欄位
+## Motion Design Guidance
+先決定「為什麼動」再決定「怎麼動」：
+1. 敘事目的
+2. 動作節奏
+3. 重點動作與停頓
+4. camera motivation
+5. easing / acceleration 的視覺感受
+6. 前後鏡頭銜接
+
+本 Skill 只規劃 motion concept 與 storyboard，不輸出 Lottie JSON、影片檔或影片模型參數。
+
+## PREVIS Prompt Pattern
+`Create an 8-frame cinematic PREVIS storyboard of one continuous event. Preserve the exact character identity, costume, props, lighting direction, screen direction and spatial relationships. Each frame must show a meaningful action phase and motivated camera change. Label shot size, camera movement, character action, scene change, narrative purpose and transition cue.`
+
+## Table
 | 格次 | 景別 | 鏡頭方向／運動 | 角色動作 | 場景變化 | 敘事目的 | 銜接點 |
 |---|---|---|---|---|---|---|
-| 1–8 | 遠景／中景／近景等 | 推、拉、搖、移、跟、固定 | 可由前格推導 | 光線、空間或事件變化 | 推進資訊 | 與下一格的視覺連續性 |
+| 1–8 | 遠/中/近等 | 推/拉/搖/移/跟/固定 | 明確 action phase | 光線/空間/事件 | 推進資訊 | 與下一格 continuity |
 
-## 生成前檢查
-- 八格描述同一段連續事件。
-- 角色辨識特徵固定。
+## Verification
+- 八格是同一事件，不是八張無關海報。
+- identity、服裝、道具、主要色彩與光源一致。
 - 左右方向、視線、動作軸線連續。
-- 鏡頭變化服務敘事。
-- 最後一格形成可交接下一幕／關卡／影片的狀態。
-
-Upstream source blob: `eaeb66e9e9d0382b2e62647868670a44b55ce985`.
+- camera change 有敘事目的，不為變化而變化。
+- 動作從 anticipation → action → follow-through 等階段自然推進（若適用）。
+- 最後一格形成下一幕可接續狀態。

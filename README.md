@@ -22,24 +22,6 @@ GitHub 是 **Canonical Distribution / 功能演進來源**。eduHarness Cloud v0
 
 - [首次安裝指南－圖文完整版 Google 文件](https://docs.google.com/document/d/1TMPUji8CDdaYE-KWxT7tS7ie-FSnVwF5r6NlM4SU_sg/edit?usp=sharing)
 - [安裝／升級完整說明](docs/INSTALL_UPGRADE.md)
-- [eduHarness Cloud v0.2 Master Plan](docs/EDUHARNESS_CLOUD_V0_2_MASTER_PLAN.md)
-
-> 圖文版外部文件可能需要另外同步 v0.2 內容；GitHub canonical contracts 以本 repository `main` 為準。
-
-首次安裝最短流程：
-
-1. 建立 ChatGPT Project。
-2. 將 `00_PROJECT_INSTRUCTIONS.yaml` 全文貼入 Project Instructions。
-3. 確認 default profile 所需的 Notion / Dropbox 連線可用。
-4. 在 Project 對話輸入：
-
-```text
-安裝 eduHarness Cloud。
-請依官方 GitHub Canonical Distribution 使用預設 installation profile，
-完成後從 Bootstrap Descriptor fresh-start 驗證。
-```
-
-**不再要求先建立 Google Drive root。**
 
 ## 架構元件
 

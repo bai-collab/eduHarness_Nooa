@@ -18,9 +18,12 @@ GitHub 是 **Canonical Distribution / 功能演進來源**。eduHarness Cloud v0
 
 ## 教師安裝入口
 
+- [首次安裝指南－圖文完整版 Google 文件](https://docs.google.com/document/d/1EFl7fx6AfiaExUA-FKUv2BHMSgK9srJ6djPHHcKo80c/edit?usp=drivesdk)
 - [安裝指南](INSTALL.md)
 - [安裝／升級完整說明](docs/INSTALL_UPGRADE.md)
 - [ChatGPT 新手安裝手冊](docs/CHATGPT_PAID_INSTALL_GUIDE.md)
+
+> 圖文版外部文件可能需要另外同步 v0.2 內容；GitHub canonical contracts 以本 repository `main` 為準。
 
 首次安裝最短流程：
 

@@ -18,7 +18,7 @@ GitHub 是 Canonical Distribution / 功能演進來源；每位教師自己的 G
 
 ## 教師安裝入口
 
-- [首次安裝指南](INSTALL.md)
+- [首次安裝指南-圖文完整版 Google 文件](https://docs.google.com/document/d/1EFl7fx6AfiaExUA-FKUv2BHMSgK9srJ6djPHHcKo80c/edit?usp=drivesdk)
 - [安裝／升級完整說明](docs/INSTALL_UPGRADE.md)
 - [純文字版設定手冊](docs/CHATGPT_PAID_INSTALL_GUIDE.md)
 

@@ -1,215 +1,192 @@
-# eduHarness_Nooa｜ChatGPT 付費版新手安裝手冊 v1.0
+# eduHarness_Nooa｜ChatGPT 新手安裝手冊 v2.0
 
-> 給會使用 ChatGPT、但第一次接觸「專案」的老師。
+> 給會使用 ChatGPT、但第一次接觸 eduHarness 的老師。
 >
-> 目標：照著本手冊操作，完成 eduHarness_Nooa 安裝，最後看到 `INSTALLATION_READY`。
+> 目標：依照本手冊完成 eduHarness Cloud 安裝，最後看到 `INSTALLATION_READY`。
 
-- 適用：ChatGPT Web＋eduHarness Cloud v1.3.2
-- 更新日期：2026-08-11
-- 圖文完整版 Google 文件：<https://docs.google.com/document/d/1EFl7fx6AfiaExUA-FKUv2BHMSgK9srJ6djPHHcKo80c/edit?usp=drivesdk>
+- 適用：ChatGPT Web＋eduHarness Cloud v0.2 architecture
+- Default profile：Notion Control Plane + Dropbox Storage
+- Runtime State：ephemeral
 
-## 安裝路線圖
+## 你只要完成 5 件事
 
-你只要完成 6 件事：
+1. 建立 ChatGPT Project
+2. 連接需要的服務（default profile：Notion、Dropbox）
+3. 貼上 Project Kernel
+4. 輸入安裝指令
+5. 確認 fresh-start verification PASS
 
-1. 連接 Google Drive
-2. 建立自己的空白資料夾
-3. 複製資料夾網址
-4. 建立 ChatGPT 專案
-5. 貼上專案指令
-6. 貼上安裝指令
-
-最後看到 `INSTALLATION_READY`，就代表第一次安裝完成並通過讀回驗證。
+**不需要先建立 Google Drive 資料夾，也不需要複製 Drive URL。**
 
 ---
 
-## 0｜開始前先準備
+## 0｜開始前準備
 
-你需要準備：
+你需要：
 
-1. 一個已登入的 ChatGPT 帳戶。
-2. 一個自己的 Google 帳號，而且可以在 Google Drive 建立、修改檔案。
-3. 在 ChatGPT 的 **Settings（設定） → 外掛程式** 中，可以找到並連接 Google Drive。
+1. 一個可使用 Project 的 ChatGPT 帳戶。
+2. 可連接 Notion 與 Dropbox 的帳戶／工作區，作為 default installation profile。
+3. 對自己要使用的 Notion / Dropbox resources 具備必要讀寫權限。
 
-> 重要：請使用「自己的」Google Drive。不要把別人的 eduHarness 資料夾直接當成你的安裝位置。
+如果某個連線被管理員停用、沒有連接權限或 connector 不支援必要操作，安裝必須停止並明確回報；不能偷偷改用別人的 installation 或猜 provider locator。
 
-如果 Google Drive 外掛程式顯示 `Disabled by admin`、沒有 `Connect` 按鈕，或無法取得需要的檔案操作權限，請先處理帳號或管理員權限，再繼續安裝。
+## 1｜建立 ChatGPT Project
 
-## 1｜把 Google Drive 連接到 ChatGPT
+1. 在 ChatGPT 建立新的 Project。
+2. 專案名稱可使用 `eduHarness_Nooa`。
+3. 之後 eduHarness 工作都從這個 Project 開始。
 
-1. 打開 ChatGPT。
-2. 點自己的頭像 → **Settings（設定）**。
-3. 進入 **外掛程式**。
-4. 找到 **Google Drive**。
-5. 點 **Connect**。
-6. 依畫面登入你的 Google 帳號，並同意需要的權限。
+## 2｜連接 default providers
 
-如果你同時登入多個 Google 帳號，請確認選的是準備放 eduHarness 的那一個帳號。
-
-eduHarness 安裝需要 ChatGPT 能在你授權的 Google Drive 範圍內讀取並建立檔案。是否啟用 Sync 不作為安裝成功判準；真正要確認的是 Google Drive 檔案操作是否可用。
-
-## 2｜在 Google Drive 建立空白資料夾
-
-1. 打開 Google Drive。
-2. 點 **＋ 新增**。
-3. 選 **新增資料夾**。
-4. 資料夾名稱建議輸入：`eduHarness_Nooa`
-5. 建立後，打開這個資料夾。
-
-這時裡面應該是空的，這是正常的。等等會由 ChatGPT 幫你建立 eduHarness 需要的資料夾與檔案。
-
-## 3｜複製 Google Drive 資料夾連結
-
-1. 確定你目前正在剛才建立的 `eduHarness_Nooa` 資料夾裡。
-2. 直接複製瀏覽器上方網址列的完整網址。
-
-網址大致會像：
+Default profile：
 
 ```text
-https://drive.google.com/drive/folders/xxxxxxxxxxxxxxxx
+Control Plane = Notion
+Storage Provider = Dropbox
 ```
 
-不用修改網址，也不用自己找資料夾 ID；整串複製即可。
+請在 ChatGPT 可用的 Connected Apps / plugins 中連接自己的 Notion 與 Dropbox。
 
-> 不要把這個資料夾設定成「知道連結的任何人都可以編輯」。ChatGPT 使用的是你已連接的 Google 帳號權限，不需要把自己的資料夾公開成可編輯。
+- Notion 用來承載 ENV / Registry / Brain Index / Artifact Index 等 control-plane resources。
+- Dropbox 用來承載 artifacts / output / work_area。
 
-## 4｜在 ChatGPT 建立 eduHarness 專案
+Google Drive 仍可作 optional/legacy Storage Provider 或 migration source，但不是首次安裝必要條件。
 
-1. 回到 ChatGPT。
-2. 在左側欄找到 **New project（新專案）**。
-3. 專案名稱建議輸入：`eduHarness_Nooa`
-4. 圖示與顏色可自由選擇，不影響功能。
-5. 建立專案後，進入這個專案。
+## 3｜貼上 Project Kernel
 
-你可以把「專案」想成一個專門給 eduHarness 使用的工作空間。之後要使用 eduHarness，就從這個專案開始新對話。
+1. 開啟官方 [`00_PROJECT_INSTRUCTIONS.yaml`](../00_PROJECT_INSTRUCTIONS.yaml)。
+2. 複製全文。
+3. 貼入 Project Instructions。
+4. 不要加入自己的 Notion page/database ID、Dropbox ID/path 或 Google Drive URL。
 
-## 5｜貼上專案指令
+Project Kernel 是 portable governance；installation-specific locator 應留在 Bootstrap Descriptor / ENV / provider records。
 
-eduHarness 需要一份固定的 Project Instructions，讓 ChatGPT 知道怎麼運作。
+## 4｜開始安裝
 
-1. 開啟官方檔案：[`00_PROJECT_INSTRUCTIONS.yaml`](../00_PROJECT_INSTRUCTIONS.yaml)
-2. 複製檔案全部內容。
-3. 回到你的 `eduHarness_Nooa` 專案。
-4. 點專案右上角 `⋯`。
-5. 選 **專案設定**。
-6. 找到 **Project instructions／專案指令** 欄位。
-7. 把 `00_PROJECT_INSTRUCTIONS.yaml` 全文貼進去。
-8. 儲存。
-
-> 請整份原封不動貼上。不要自行刪除 YAML 內容，也不要把自己的 Google Drive 網址寫進 Project Instructions。
-
-## 6｜開始安裝 eduHarness
-
-在 `eduHarness_Nooa` 專案中建立一個新對話，把下面整段文字貼給 ChatGPT。只需要把 `<貼上你的 Google Drive 資料夾 URL>` 換成剛才複製的網址。
+在 Project 新對話輸入：
 
 ```text
 請初始化我的 eduHarness Cloud。
-
-我的 Google Drive 根目錄：
-<貼上你的 Google Drive 資料夾 URL>
-
-請依 eduHarness 官方 Distribution 建立完整 Cloud installation，
-完成後重新從 ENV 執行 bootstrap 驗證。
+請依 eduHarness 官方 GitHub Canonical Distribution，
+使用預設 installation profile（Notion Control Plane + Dropbox Storage）完成安裝，
+並從 Bootstrap Descriptor 執行 fresh-start read-back verification。
 ```
 
-## 7｜遇到權限詢問時怎麼辦？
+系統應完成：
 
-安裝過程中，ChatGPT 需要在你的 Google Drive 建立資料夾與檔案，因此可能跳出「允許／Allow」確認畫面。
+```text
+GitHub Distribution
+→ provision Control Plane / Storage
+→ install logical artifacts
+→ Artifact Index mappings
+→ Registry / Brain bindings
+→ formal ENV
+→ Bootstrap Descriptor
+→ fresh-start verification
+```
 
-可以核准的典型情況：在你指定的空白 `eduHarness_Nooa` 資料夾中建立安裝所需資料夾與檔案。
+## 5｜遇到權限詢問時
 
-先不要核准的情況：刪除既有檔案、覆寫與 eduHarness 無關的內容、把成果存到不明位置，或要求你把整個 Drive 公開。
+可以核准的典型情況：
+- 在你自己的 Notion workspace 建立 eduHarness control-plane resources。
+- 在你自己的 Dropbox 建立 eduHarness storage folders / artifacts。
+- 依已顯示的安裝計畫建立必要 resources。
 
-## 8｜怎樣才算安裝成功？
+需要先確認的情況：
+- 覆寫既有 production Registry / Brain / Artifact mappings。
+- 刪除既有資料。
+- 大量搬移或覆寫。
+- 使用你沒有指定的其他 provider。
+- 將 installation-specific locator 寫回 GitHub Canonical Distribution。
 
-不要只看 ChatGPT 說「完成了」。正式安裝流程會在寫入後重新讀取 ENV、Registry、Brain Index 與 Skills 做驗證。
+## 6｜怎樣才算安裝成功？
 
-你最後應看到：
+不要只看 ChatGPT 說「完成」。系統必須從 Bootstrap Descriptor 重新開始讀回：
+
+```text
+Bootstrap Descriptor
+→ ENV
+→ Registry / Brain Index / Artifact Index
+→ logical artifact
+→ Storage Provider
+→ stable identity / revision（provider 支援時）
+```
+
+並確認 storage roles：
+
+- `artifacts`
+- `output`
+- `work_area`
+
+全部 required checks PASS 才能看到：
 
 ```text
 INSTALLATION_READY
 ```
 
-安裝後，Google Drive 會出現類似下面的結構：
+## 7｜三個最重要的概念
+
+### Bootstrap Descriptor
+installation entry。它告訴 runtime 正式 ENV 在哪裡。
+
+### ENV
+installation config。它告訴 runtime 使用哪個 Control Plane / Storage Provider，以及對應 locators。
+
+### Artifact Index
+把 logical artifact ID 解析成真正的 provider identity。
+
+例如：
 
 ```text
-eduHarness_Nooa/
-├── 00_EDUHARNESS_ENV.yaml
-├── 00_ADMIN/
-│   ├── 00_EDU_SKILL_REGISTRY.yaml
-│   ├── 01_BRAIN_INDEX.yaml
-│   └── SKILLS/
-├── 10_KNOWLEDGE_BASE/
-├── 20_TEMPLATES/
-├── 30_EXPERIENCE/
-├── 40_ERROR_LOG/
-├── 50_WORKSPACE/
-├── 80_SHARED_RESOURCES/
-├── 90_OUTPUT/
-├── 98_REVIEW_LATER/
-└── 99_ARCHIVE/
+brain://curriculum/index
+→ artifact://production/knowledge/curriculum/index
+→ Artifact Index
+→ Dropbox stable ID
 ```
 
-新手先記住兩個資料夾即可：
+## 8｜成果會放哪裡？
 
-- `50_WORKSPACE`：工作中的暫存／中間產物。
-- `90_OUTPUT`：完成後要交給你使用的成果。
+若沒有特別指定，且 Skill/Registry 沒有其他規則：
 
-若你沒有另外指定位置，且 Skill／Registry 沒有專用規則，可交付成果應預設進 `90_OUTPUT`；中間工作檔使用 `50_WORKSPACE`。
+- 可交付成果 → `ENV.storage.output`
+- 中間工作檔 → `ENV.storage.work_area`
 
-## 9｜安裝完成後，先試這一句
+實際位置由 Storage Provider 決定，而不是 Kernel 固定某個 Drive directory。
 
-在 eduHarness 專案新對話中輸入：
+## 9｜安裝後測試
+
+建立新對話並輸入：
 
 ```text
 目前我有哪些 skill 可以用？
 ```
 
-如果 eduHarness 能從你的安裝環境讀取 Registry，並列出目前可以使用的能力，就代表基本運作正常。
-
-之後可以直接用自然語言提出教師工作，例如：
-
-- 幫我設計一堂國小四年級自然課。
-- 分析這份教案並提出改進建議。
-- 我要做一份形成性評量。
-- 把這份教材改成學生闖關活動。
+正常情況下，runtime 會從 Descriptor / ENV 解析 production Registry，而不是直接以 GitHub canonical file 當 production SSOT。
 
 ## 常見問題
 
 ### 我一定要懂 YAML、GitHub 或程式嗎？
+不用。一般安裝只需要建立 Project、連接服務、貼 Kernel 與輸入安裝指令。
 
-不用。第一次安裝只要會複製、貼上、建立資料夾即可。
+### 為什麼不用先建 Google Drive？
+因為 v0.2 把 Control Plane、Storage、logical artifact identity 分開。Default Storage 改為 Dropbox；Google Drive 只是 optional adapter。
 
-### 為什麼一定要建立 ChatGPT 專案？
+### 一定要用 Notion + Dropbox 嗎？
+這是目前 Canonical Distribution 的 default profile，不是 Kernel 唯一可能的 provider。其他 provider 必須符合 Control Plane / Storage Adapter contracts，並且當次 runtime 有對應工具與權限。
 
-因為 Project Instructions 會固定放在專案裡，讓每次在專案內的新對話都能使用 eduHarness 的運作規則。
+### ChatGPT 說找不到 Descriptor？
+代表 installation entry 不存在或不可唯一解析。應修復 Descriptor / ENV；不要改用 GitHub 或模型記憶猜 production locator。
 
-### 為什麼要連接 Google Drive？
-
-因為 eduHarness 的 Skills、Knowledge、Templates 與輸出資料需要一個屬於你自己的雲端工作空間。
-
-### 我需要把 Google Drive 設成公開嗎？
-
-不需要。保留你自己正常的 Drive 權限即可；ChatGPT 透過你授權連接的 Google 帳號存取。
-
-### ChatGPT 找不到 Google Drive 怎麼辦？
-
-先檢查 **Settings（設定） → 外掛程式 → Google Drive** 是否已連接。如果 `Connect` 灰掉、顯示 `Disabled by admin`，或動作無法執行，可能是方案、工作區角色、地區或管理員設定有限制。
-
-### 我沒有看到 INSTALLATION_READY？
-
-代表目前不能確定安裝已完整驗證。保留 ChatGPT 最後顯示的錯誤訊息，再請它檢查安裝失敗原因，不要自行刪除 Drive 裡的資料夾。
-
-### 成果會跑到哪裡？
-
-若沒有指定其他位置，正常情況下可交付成果會依 ENV 路由到 `90_OUTPUT`；中間工作檔則使用 `50_WORKSPACE`。若成果出現在 My Drive 根目錄或其他不明位置，應視為位置驗證失敗並修正。
+### 沒看到 INSTALLATION_READY？
+代表至少一個 required read-back 尚未通過。保留錯誤訊息，依 failure code 修復，不要自行刪除 storage/control-plane resources。
 
 ---
 
-## 最後只要記住三件事
+## 最後記住四件事
 
-1. ChatGPT 專案 = 你的 eduHarness AI 工作台。
-2. Google Drive 的 `eduHarness_Nooa` 資料夾 = 你的私人工作空間。
-3. 看到 `INSTALLATION_READY` = 第一次安裝完成。
+1. Project Kernel = 固定治理規則。
+2. Bootstrap Descriptor = installation entry。
+3. Notion + Dropbox = default profile，不是 Kernel 硬編碼唯一 provider。
+4. `INSTALLATION_READY` = fresh-start read-back 全部 PASS。
 
-> ChatGPT 介面與外掛程式能力可能持續更新；若按鈕名稱或位置有小幅變動，以當下介面功能名稱為準。
+> ChatGPT 介面與 Connected Apps 能力可能更新；實際操作以當次可用功能與權限為準。

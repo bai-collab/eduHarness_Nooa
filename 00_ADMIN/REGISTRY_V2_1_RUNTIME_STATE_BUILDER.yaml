@@ -4,7 +4,7 @@ routing_guard_contract_version: "2.1"
 status: active
 runtime_ssot: true
 kernel_contract:
-  canonical_required: "eduHarness Cloud v1.4.1 Compact Portable Kernel"
+  canonical_required: "eduHarness Cloud v2.0.0 Compact Portable Kernel"
 
 inputs:
   accepted_evidence_sources: [user_input, skill_output, tool_result, runtime_state, inference]

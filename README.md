@@ -12,7 +12,7 @@ GitHub 是 Canonical Distribution / 功能演進來源；每位教師自己的 G
 - routing guard contract：`2.1`
 - Runtime State Builder：已納入 Distribution
 - Observability：Audit Trace Contract + Runtime Trace Adapter 已納入 Distribution
-- installed cloud skills：`16`
+- installed cloud skills：`17`
 
 **一般升級不需要重新貼 Project Instructions。** Project Kernel 刻意保持穩定；只要 Kernel 仍支援新版 Registry schema，更新會發生在教師自己的 Drive installation。只有未來 Kernel 本身出現 breaking runtime / governance change 時，才需要 Project Instructions migration。
 

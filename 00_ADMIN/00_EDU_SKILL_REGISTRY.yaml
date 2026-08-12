@@ -4,20 +4,21 @@ namespace: "edu"
 edition: "cloud"
 status: "active"
 runtime_ssot: true
-distribution_revision: "2026-08-12"
+distribution_revision: "2026-08-12-v0.2"
 
 runtime_targets: [chatgpt_web, gemini_spark]
 
 environment_contract:
-  runtime_env_anchor: "00_EDUHARNESS_ENV.yaml"
-  template: "00_EDUHARNESS_ENV_TEMPLATE.yaml"
-  rule: "Registry 不保存 installation-specific Drive locator；runtime 先讀正式 ENV，再由 ENV.workspace.registry 找到 Registry。"
+  installation_entry: "Bootstrap Descriptor"
+  env_template: "00_EDUHARNESS_ENV_TEMPLATE.yaml"
+  rule: "Registry 不保存 installation-specific provider locator；runtime 由 Bootstrap Descriptor 定位正式 ENV，再由 ENV.control_plane.registry 找到 production Registry。"
 
 source_contract:
-  cloud_runtime_ssot: "Google Drive installation resolved from ENV"
+  cloud_runtime_ssot: "installation Control Plane resolved from Bootstrap Descriptor + ENV"
   canonical_distribution_repository: "https://github.com/bai-collab/eduHarness_Nooa.git"
   upstream_branch: "main"
   canonical_skill_root: "00_ADMIN/SKILLS"
+  artifact_resolution: "Registry Skill target SHOULD resolve through logical artifact:// ID → Artifact Index → storage provider stable identity."
 
 routing_policy:
   unknown_skill_action: stop
@@ -46,7 +47,7 @@ observability_policy:
   trace_adapter_ref: "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml"
   trace_assembly_owner: runtime_orchestrator
   trace_default_persistence: ephemeral
-  trace_persist_destination: "ENV.workspace.work_area"
+  trace_persist_destination: "ENV.storage.work_area"
   private_chain_of_thought_storage: prohibited
   student_pii_storage: prohibited
 
@@ -97,7 +98,7 @@ skill_port_policy:
   update_registry_after_success: true
   update_brain_index_for_skill_only: false
   portability_verification_required: true
-  installation_specific_drive_locator_allowed_outside_env: false
+  installation_specific_locator_allowed_in_canonical_registry: false
   skill_package_unit: folder
   preserve_required_subresources: true
 
@@ -108,10 +109,10 @@ skills:
     file: "00_ADMIN/SKILLS/_META/cloud-bootstrap/SKILL.md"
     metadata: {type: meta, role: primary-capability}
     selection:
-      triggers: ["初始化 eduHarness Cloud", "安裝 eduHarness Cloud", "安裝 eduHarness_Nooa", "從 Distribution 安裝 eduHarness", "建立 eduHarness Cloud 架構", "依模板建立 ENV", "搬移 eduHarness Cloud", "修復 eduHarness Cloud bootstrap", "升級 eduHarness Cloud"]
+      triggers: ["初始化 eduHarness Cloud", "安裝 eduHarness Cloud", "安裝 eduHarness_Nooa", "從 Distribution 安裝 eduHarness", "建立 eduHarness Cloud 架構", "建立 Bootstrap Descriptor", "搬移 eduHarness Cloud", "修復 eduHarness Cloud bootstrap", "升級 eduHarness Cloud"]
       excludes: ["一般教案撰寫", "一般命題", "一般教材製作", "一般文獻查詢"]
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
-    constraints: {human_gate_if: ["覆寫既有 ENV", "覆寫既有 Registry 或 Brain Index", "批次搬移或刪除資料", "production upgrade"]}
+    constraints: {human_gate_if: ["覆寫既有 Descriptor 或 ENV", "覆寫既有 Registry/Brain Index/Artifact Index", "批次搬移或刪除資料", "production upgrade"]}
 
   - id: github-to-cloud-skill-port
     namespace_id: "edu:github-to-cloud-skill-port"
@@ -119,7 +120,7 @@ skills:
     file: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"
     metadata: {type: meta, role: primary-capability}
     selection:
-      triggers: ["同步 GitHub skill", "複製 GitHub skill 到 Drive", "移植 eduHarness skill", "更新 Cloud skill", "檢查 GitHub skill 是否有新版"]
+      triggers: ["同步 GitHub skill", "移植 eduHarness skill", "更新 Cloud skill", "檢查 GitHub skill 是否有新版"]
       excludes: ["一般教案撰寫", "一般命題", "一般教材製作", "一般文獻查詢"]
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
     constraints: {human_gate_if: ["批次同步", "覆寫既有 Cloud Skill 的重大流程", "刪除或重新命名 Skill"]}
@@ -135,7 +136,7 @@ skills:
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: ["edu:github-to-cloud-skill-port", "edu:cloud-bootstrap"]}
     constraints: {human_gate_if: ["新增或修改 production Registry entry", "新增或修改 KeyPoint catalog", "新增或修改 production route", "重大覆寫既有 Skill procedure", "刪除或重新命名 production Skill", "批次同步多個 Skill", "發布 GitHub Canonical Distribution main", "任何可能破壞 routing 的治理修改"]}
     runtime: {chatgpt_web: "supported", gemini_spark: "supported"}
-    source: {kind: "local-design", provenance: "CLOUD_SKILL_BUILDER_DEVELOPMENT_PLAN.md Draft 0.1 + validated Drive production", upstream_version: "0.1.0"}
+    source: {kind: "local-design", provenance: "CLOUD_SKILL_BUILDER_DEVELOPMENT_PLAN.md Draft 0.1 + validated Cloud production", upstream_version: "0.1.0"}
     cloud: {port_mode: "native-cloud", sync_status: "canonical"}
 
   - id: lesson-plan-authoring

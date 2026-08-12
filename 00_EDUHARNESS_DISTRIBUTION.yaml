@@ -15,9 +15,11 @@ distribution:
     Notion 是 default Control Plane；Dropbox 是 default Storage Provider；Google Drive 為 optional/legacy storage provider。
 
 compatibility:
-  project_kernel_version: "eduHarness Cloud v1.4.1 Compact Portable Kernel"
-  project_instruction_upgrade_policy: "stable-unless-kernel-breaking-change"
+  project_kernel_version: "eduHarness Cloud v2.0.0 Compact Portable Kernel"
+  previous_kernel_version: "eduHarness Cloud v1.4.1 Compact Portable Kernel"
+  project_instruction_upgrade_policy: "kernel-breaking-change-requires-migration"
   project_instructions_repaste_required_for_normal_upgrade: false
+  project_instructions_repaste_required_for_v2_cutover: true
   installation_env_kind: "eduHarness-cloud"
   installation_edition: "cloud"
   env_schema: 2
@@ -57,6 +59,7 @@ canonical_contracts:
   storage_adapter: {source: "docs/STORAGE_ADAPTER_CONTRACT.md", required: true}
   runtime_state: {source: "docs/RUNTIME_STATE_CONTRACT.md", required: true}
   production_readiness: {source: "docs/PRODUCTION_READINESS.md", required: true}
+  master_plan: {source: "docs/EDUHARNESS_CLOUD_V0_2_MASTER_PLAN.md", required: true}
 
 resources:
   install_guide: {type: file, source: "INSTALL.md", required: true}

@@ -1,74 +1,40 @@
-version: 1
+version: 2
 name: "eduHarness Cloud Brain Index"
 
-root_source: "ENV.workspace.drive_root"
+resolution_contract:
+  installation_entry: "Bootstrap Descriptor"
+  env_role: "installation config"
+  provider: "artifact_index"
+  rule: "Brain Index 保存 logical knowledge/memory references；若 Provider Ref 為 artifact://，必須經 Artifact Index 解析為實際 storage provider identity。Brain Index 不保存 installation-specific Notion/Dropbox/Drive locator。"
 
-sections:
-  admin:
-    path: "00_ADMIN"
-    items:
-      - "00_PROJECT_INSTRUCTIONS.yaml — Cloud Harness 全域治理與 runtime contract"
-      - "00_EDU_SKILL_REGISTRY.yaml — Cloud Skill routing 的唯一正式 Registry"
-      - "01_BRAIN_INDEX.yaml — 本索引"
-      - "SKILLS/ — Cloud Skill 正式執行版本"
-      - "SKILLS/_META/ — Skill 管理、移植、維護類 meta Skill"
+namespaces:
+  curriculum:
+    logical_ref: "brain://curriculum/index"
+    provider_ref: "artifact://production/knowledge/curriculum/index"
+    knowledge_type: "knowledge"
+    load_policy: "on_demand"
+    purpose: "教案設計時依領域與學習階段按需解析 curriculum index，再載入必要領域資料。"
 
-  knowledge_base:
-    path: "10_KNOWLEDGE_BASE"
-    purpose: "經驗證、可跨任務重用的教育知識與規則"
-    managed_resources:
-      curriculum_standards:
-        path: "10_KNOWLEDGE_BASE/課綱_各領域"
-        index: "10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md"
-        ownership: "distribution-managed"
-        loading: "on-demand"
-        scope: "relevant-domain-only"
-        purpose: "教案設計時依領域與學習階段按需載入的課綱參考來源"
-
-  templates:
-    path: "20_TEMPLATES"
-    purpose: "教案、評量、文件與輸出模板"
-
-  experience:
-    path: "30_EXPERIENCE"
-    purpose: "已驗證、可重用的工作方法與判斷經驗"
-
-  error_log:
-    path: "40_ERROR_LOG"
-    purpose: "已確認失敗、根因與 Do Not Repeat"
-
-  workspace:
-    path: "50_WORKSPACE"
-    purpose: "進行中與一次性工作檔"
-
-  shared_resources:
-    path: "80_SHARED_RESOURCES"
-    purpose: "跨 Skill 共用且不屬於正式 knowledge 的資源"
-
-  output:
-    path: "90_OUTPUT"
-    purpose: "完成後的正式交付物"
-
-  review_later:
-    path: "98_REVIEW_LATER"
-    purpose: "待人工判斷、尚未正式納入的內容"
-
-  archive:
-    path: "99_ARCHIVE"
-    purpose: "已淘汰、舊版或不再使用但需保留追溯的內容"
+categories:
+  knowledge: "經驗證、可跨任務重用的教育知識與規則"
+  template: "教案、評量、文件與輸出模板"
+  experience: "已驗證、可重用的工作方法與判斷經驗"
+  error_log: "已確認失敗、根因與 Do Not Repeat"
+  shared_resource: "跨 Skill 共用且不屬於正式 knowledge 的資源"
 
 meta_skills:
   - id: "edu:cloud-bootstrap"
-    path: "00_ADMIN/SKILLS/_META/cloud-bootstrap/SKILL.md"
-    purpose: "初始化、安裝、搬移或修復 eduHarness Cloud installation"
+    logical_role: "installation lifecycle"
+    purpose: "以 Descriptor-first 流程初始化、安裝、搬移、升級或修復 eduHarness Cloud installation"
   - id: "edu:github-to-cloud-skill-port"
-    path: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"
-    purpose: "從 Canonical Distribution 同步 Cloud Skill，或依使用者明確要求從 legacy Code Edition 移植/更新"
+    logical_role: "canonical skill promotion/port"
+    purpose: "從 GitHub Canonical Distribution 同步 Cloud Skill，經 Artifact Index 與實際 storage provider 安裝。"
 
 index_rules:
-  - "課綱正式索引為 10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md；教案工作先依領域與學習階段選擇必要課綱，不預載全部領域。"
-  - "10_KNOWLEDGE_BASE/課綱_各領域 為 Distribution-managed curriculum resource；同一 Knowledge Base 內其他教師自訂內容仍屬 user-owned，不得因一般升級被覆寫。"
-  - "新增 Skill 後，正式身份以 00_EDU_SKILL_REGISTRY.yaml 為準。"
-  - "單純新增或同步 Skill 不更新本索引；新增 knowledge / template / experience / error / shared resource 索引時才更新。"
-  - "所有 installation-specific Google Drive locator 只由正式 ENV 提供；本 Index 只保存相對 path / logical reference。"
-  - "搜尋到檔名不代表已讀取內容；執行前仍需實際讀取檔案全文。"
+  - "一般工作只載入與任務相關的 Brain namespace；不得預載全部 Knowledge。"
+  - "Logical Ref 是 Brain identity；provider/path 不是 Brain identity。"
+  - "新增 Skill 後正式 routing identity 以 Registry 為準；Skill binary/text artifact identity 由 Artifact Index 管理。"
+  - "新增 knowledge/template/experience/error/shared resource 時才更新 Brain Index；實體 artifact locator 更新 Artifact Index。"
+  - "搜尋到 logical ref 或檔名不代表已讀取內容；執行前仍需解析 Artifact Index 並實際讀取來源。"
+  - "Runtime State 預設 ephemeral，不自動寫入 Brain。"
+  - "Google Drive path 僅能作 optional provider path hint，不得作本 Index 的 root_source。"

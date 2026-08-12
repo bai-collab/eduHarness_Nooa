@@ -217,10 +217,19 @@ skills:
     namespace_id: "edu:visual-art-storyboard"
     canonical_name: "美工與分鏡設計"
     file: "00_ADMIN/SKILLS/visual-art-storyboard/SKILL.md"
-    metadata: {type: workflow, role: primary-capability}
-    selection: {triggers: ["美工", "美術設計", "角色設計", "場景設計", "分鏡", "運鏡八格", "/gb", "PREVIS"], excludes: []}
+    metadata:
+      type: workflow
+      role: primary-capability
+      purpose: "將自然語言視覺需求轉成 Visual Specification，支援直接生圖、先討論、既有圖片修改、Prompt 優化與可選八格分鏡。"
+    selection: {triggers: ["美工", "美術設計", "角色設計", "場景設計", "生圖", "圖片生成", "Prompt 優化", "分鏡", "運鏡八格", "/gb", "PREVIS"], excludes: []}
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
     constraints: {human_gate_if: []}
+    source:
+      kind: "github-port+local-extension"
+      upstream_version: "2.1"
+      canonical_sha256: "603B16E7C3377DA51A688D2F4F33FAAF5E9BD031AFAADA6C668CFDC876029699"
+      provenance: "Cloud production extension approved 2026-08-12; Prompt Architecture + structural prompting + Style Recipes + Visual QA + fast_generate/discuss_first/edit_existing interaction routing."
+    cloud: {port_mode: "functional-adaptation", sync_status: "canonical"}
 
   - id: image-to-3d-scene
     namespace_id: "edu:image-to-3d-scene"

@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 2
 manifest_kind: "eduHarness-distribution"
 status: "stable"
 
@@ -7,10 +7,12 @@ distribution:
   name: "eduHarness_Nooa"
   edition: "cloud"
   version: "2026.08.12"
+  architecture_revision: "v0.2"
   channel: "stable"
   description: >
     eduHarness Cloud Canonical Distribution for ChatGPT Web / Gemini Spark.
-    GitHub 是正式散布與功能演進來源；每位教師自己的 Google Drive 才是 runtime installation。
+    GitHub 是 Canonical Distribution；Bootstrap Descriptor 是 installation entry；
+    Notion 是 default Control Plane；Dropbox 是 default Storage Provider；Google Drive 為 optional/legacy storage provider。
 
 compatibility:
   project_kernel_version: "eduHarness Cloud v1.4.1 Compact Portable Kernel"
@@ -18,169 +20,156 @@ compatibility:
   project_instructions_repaste_required_for_normal_upgrade: false
   installation_env_kind: "eduHarness-cloud"
   installation_edition: "cloud"
+  env_schema: 2
   registry_schema: 2
   routing_guard_contract_version: "2.1"
   runtime_targets: [chatgpt_web, gemini_spark]
 
+architecture:
+  installation_entry: "bootstrap_descriptor"
+  env_role: "installation_config"
+  registry_role: "capability_routing"
+  brain_index_role: "knowledge_memory_logical_index"
+  artifact_index_role: "logical_artifact_resolution"
+  runtime_state: "ephemeral"
+  default_control_plane: "notion"
+  default_storage_provider: "dropbox"
+  optional_storage_providers: [google_drive]
+  provider_rule: "Default providers are distribution defaults, not Kernel-global hard dependencies. Resolve actual providers from Descriptor/ENV."
+
 installation:
-  root_provisioning: "user-created"
-  root_input: "teacher-provided-google-drive-url"
-  installer_skill: "cloud-bootstrap"
-  strategy: "reconstruct-from-manifest"
-  existing_root_policy: "inspect-before-write"
+  strategy: "descriptor-first"
+  bootstrap_skill: "cloud-bootstrap"
+  provider_profile_default: "notion+dropbox"
+  preexisting_installation_policy: "inspect-before-write"
   overwrite_policy: "human-gate"
+  google_drive_root_required: false
 
 upstream:
   source: "project-kernel"
   repository_field: "upstream.repository"
   branch_field: "upstream.branch"
-  rule: "Canonical Distribution 從 Project Kernel 宣告的 GitHub upstream 解析；教師只提供自己的 Google Drive root。"
+  rule: "Canonical Distribution 從 Project Kernel 宣告的 GitHub upstream 解析；不得要求教師提供 GitHub distribution locator。"
+
+canonical_contracts:
+  bootstrap_descriptor: {source: "docs/BOOTSTRAP_DESCRIPTOR_CONTRACT.md", required: true}
+  control_plane: {source: "docs/CONTROL_PLANE_CONTRACT.md", required: true}
+  storage_adapter: {source: "docs/STORAGE_ADAPTER_CONTRACT.md", required: true}
+  runtime_state: {source: "docs/RUNTIME_STATE_CONTRACT.md", required: true}
+  production_readiness: {source: "docs/PRODUCTION_READINESS.md", required: true}
 
 resources:
-  install_guide: {type: file, source: "INSTALL.md", required: true, install_action: manual-read}
-  upgrade_guide: {type: file, source: "docs/INSTALL_UPGRADE.md", required: true, install_action: manual-read}
-  project_kernel:
-    type: file
-    source: "00_PROJECT_INSTRUCTIONS.yaml"
-    required: true
-    install_action: manual-project-instructions
-    instruction: "首次安裝才需要把 Kernel 貼入 Project Instructions；一般 distribution upgrade 不要求重貼。"
-  env_template: {type: file, source: "00_EDUHARNESS_ENV_TEMPLATE.yaml", required: true, install_action: generate-env}
-  registry: {type: file, source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml", destination: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml", required: true, install_action: copy}
-  brain_index: {type: file, source: "00_ADMIN/01_BRAIN_INDEX.yaml", destination: "00_ADMIN/01_BRAIN_INDEX.yaml", required: true, install_action: copy}
-  state_builder: {type: file, source: "00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml", destination: "00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml", required: true, install_action: copy}
-  audit_trace_contract: {type: file, source: "00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml", destination: "00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml", required: true, install_action: copy}
-  trace_adapter: {type: file, source: "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml", destination: "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml", required: true, install_action: copy}
-  skills: {type: folder, source: "00_ADMIN/SKILLS", destination: "00_ADMIN/SKILLS", required: true, install_action: reconstruct}
-  knowledge_base: {type: folder, destination: "10_KNOWLEDGE_BASE", required: true, install_action: create}
+  install_guide: {type: file, source: "INSTALL.md", required: true}
+  upgrade_guide: {type: file, source: "docs/INSTALL_UPGRADE.md", required: true}
+  project_kernel: {type: file, source: "00_PROJECT_INSTRUCTIONS.yaml", required: true}
+  env_template: {type: file, source: "00_EDUHARNESS_ENV_TEMPLATE.yaml", required: true}
+  registry: {type: logical_control_plane_resource, source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml", required: true}
+  brain_index: {type: logical_control_plane_resource, source: "00_ADMIN/01_BRAIN_INDEX.yaml", required: true}
+  artifact_index: {type: installation_control_plane_resource, required: true}
+  bootstrap_descriptor: {type: installation_entry_resource, required: true}
+  skills: {type: logical_artifacts, source: "00_ADMIN/SKILLS", required: true}
   curriculum_standards:
-    type: folder
+    type: logical_knowledge_artifacts
     source: "10_KNOWLEDGE_BASE/課綱_各領域"
-    destination: "10_KNOWLEDGE_BASE/課綱_各領域"
     required: true
-    install_action: reconstruct
     ownership: "distribution-managed"
     loading: "on-demand-relevant-domain-only"
-    index: "10_KNOWLEDGE_BASE/課綱_各領域/README_課綱索引.md"
-  templates: {type: folder, destination: "20_TEMPLATES", required: true, install_action: create}
-  experience: {type: folder, destination: "30_EXPERIENCE", required: true, install_action: create}
-  error_log: {type: folder, destination: "40_ERROR_LOG", required: true, install_action: create}
-  work_area: {type: folder, destination: "50_WORKSPACE", required: true, install_action: create}
-  shared_resources: {type: folder, destination: "80_SHARED_RESOURCES", required: true, install_action: create}
-  output: {type: folder, destination: "90_OUTPUT", required: true, install_action: create}
-  review_later: {type: folder, destination: "98_REVIEW_LATER", required: true, install_action: create}
-  archive: {type: folder, destination: "99_ARCHIVE", required: true, install_action: create}
 
-env_generation:
-  output_file: "00_EDUHARNESS_ENV.yaml"
-  env_kind: "eduHarness-cloud"
-  resolve: {drive_root: installed-root}
-  rule: "正式 ENV 必須在教師自己的 installation 產生；不得複製其他人的正式 ENV。"
+bootstrap_contract:
+  sequence:
+    - "resolve canonical Distribution"
+    - "resolve or create installation Bootstrap Descriptor"
+    - "resolve formal ENV from Descriptor"
+    - "resolve Control Plane and Storage providers from ENV"
+    - "resolve Registry / Brain Index / Artifact Index"
+    - "resolve logical Skill/Knowledge artifacts through Artifact Index"
+    - "verify provider stable identity and revision when supported"
+    - "verify storage artifacts/output/work_area"
+    - "fresh-start bootstrap from Descriptor"
+  completion: "INSTALLATION_READY"
+
+artifact_resolution:
+  rule: "Registry/Brain records SHOULD point to logical artifact:// references. Artifact Index resolves logical IDs to provider identity. Stable provider identity is authoritative over path when available."
+  required_fields: [artifact_id, provider, identity_type, identity_value, identity_strength, status]
+  revision_readback: "required when provider exposes revisions"
 
 upgrade_contract:
-  normal_upgrade_requires_project_instruction_repaste: false
   detect:
-    - "read local formal ENV"
-    - "read local Registry/runtime contracts"
+    - "read current Bootstrap Descriptor"
+    - "read formal ENV"
+    - "read current Registry / Brain Index / Artifact Index"
     - "read canonical Distribution Manifest"
   preflight:
-    - "target Registry schema is supported by active Project Kernel"
-    - "all required distribution resources are readable"
-    - "destination installation is uniquely resolved and writable"
-  snapshot:
-    required_before_replace: true
-    destination: "ENV.workspace.work_area"
-    scope: [registry, runtime_contracts, managed_skill_packages, managed_curriculum_resources, brain_index_when_migrated]
-  brain_index_policy:
-    default: "preserve"
-    migrations:
-      - id: "curriculum_standards_index_v1"
-        when: "curriculum_standards index entry missing"
-        mode: "additive-merge"
-        preserve_existing_entries: true
-        source: "00_ADMIN/01_BRAIN_INDEX.yaml"
+    - "target schemas supported by active Project Kernel"
+    - "required canonical contracts readable"
+    - "actual Control Plane and Storage providers are resolvable with current tools/ACL"
+    - "all mutation targets uniquely resolved"
   preserve:
-    - "00_EDUHARNESS_ENV.yaml"
-    - "01_BRAIN_INDEX.yaml except explicitly declared additive migration entries"
-    - "10_KNOWLEDGE_BASE user-owned content outside distribution-managed curriculum resources"
-    - "20_TEMPLATES user content"
-    - "30_EXPERIENCE"
-    - "40_ERROR_LOG"
-    - "50_WORKSPACE"
-    - "80_SHARED_RESOURCES"
-    - "90_OUTPUT"
-    - "98_REVIEW_LATER"
-    - "99_ARCHIVE"
-  replace_after_snapshot:
-    - "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
-    - "00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml"
-    - "00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml"
-    - "00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml"
-    - "distribution-managed Skill packages"
-    - "10_KNOWLEDGE_BASE/課綱_各領域"
-    - "declared Brain Index additive migration entries only"
+    - "installation-specific Bootstrap Descriptor locator unless migration explicitly requires replacement"
+    - "formal ENV unless migration explicitly requires schema conversion"
+    - "user-owned knowledge / experience / error logs / templates / outputs"
+    - "runtime state (ephemeral; never promoted as a managed artifact)"
+  managed:
+    - "Registry canonical semantics"
+    - "Distribution-managed Skill logical artifacts"
+    - "Distribution-managed curriculum logical artifacts"
+    - "declared Brain Index additive migrations"
+    - "declared Artifact Index mappings"
+  human_gate:
+    required_before: ["production control-plane mutation", "managed artifact overwrite", "Brain Index migration", "Artifact Index remap", "rollback overwrite", "canonical distribution promotion"]
   verify:
-    - "fresh bootstrap from unchanged local ENV"
-    - "Registry schema=2 and routing guard contract=2.1"
-    - "all Registry Skill targets resolve"
-    - "State Builder and observability references resolve"
-    - "Brain Index curriculum entry resolves without removing pre-existing entries"
-    - "curriculum index and all required domain curriculum resources resolve"
-    - "user-owned Knowledge outside distribution-managed curriculum resources is preserved"
-    - "no installation-specific locator leaked from Distribution"
+    - "fresh bootstrap from Descriptor"
+    - "ENV schema/config valid"
+    - "Registry schema=2 and typed relations preserved"
+    - "Brain Index logical refs resolve"
+    - "Artifact Index logical refs resolve to provider identities"
+    - "required Skill/Knowledge artifacts read back"
+    - "stable identity/revision read-back passes when supported"
+    - "storage artifacts/output/work_area resolve"
+    - "no installation-specific locator leaked into Kernel/Distribution"
   rollback:
     trigger: "any verification failure"
-    action: "restore only managed resources and any migrated Brain Index entry from snapshot; preserve ENV and user data"
-  human_gate:
-    required_before: ["replace managed production files", "bulk Skill package overwrite", "managed curriculum overwrite", "Brain Index migration write", "rollback overwrite"]
+    action: "use provider/control-plane adapter recovery; restore only affected managed resources; preserve user-owned data and re-run fresh bootstrap"
 
 distribution_privacy:
   never_distribute:
-    - "installation-specific Drive URLs or IDs"
-    - "formal ENV from another installation"
+    - "installation-specific Notion page/database IDs"
+    - "installation-specific Dropbox stable IDs or paths"
+    - "installation-specific Google Drive URLs or IDs"
+    - "formal ENV or Bootstrap Descriptor from another installation"
     - "student PII or identifiable learning records"
     - "secrets, tokens, cookies, credentials or private keys"
     - "private Brain content, working traces or teacher outputs"
 
 verification:
   required:
-    - "installed_env_exists"
-    - "installed_env_schema_valid"
-    - "installed_env_points_to_local_root"
-    - "registry_readable"
+    - "descriptor_contract_readable"
+    - "env_template_provider_neutral"
     - "registry_schema_2"
-    - "routing_guard_contract_2_1"
-    - "state_builder_readable"
-    - "audit_trace_contract_readable"
-    - "trace_adapter_readable"
-    - "brain_index_readable"
-    - "brain_index_curriculum_entry_resolves"
-    - "brain_index_existing_entries_preserved"
-    - "skills_root_accessible"
-    - "installed_cloud_skills_count_17"
-    - "skill_folder_subresources_preserved"
-    - "curriculum_resource_root_exists"
-    - "curriculum_index_readable"
-    - "curriculum_domain_count_11"
-    - "curriculum_required_resources_resolve"
-    - "user_owned_knowledge_preserved"
-    - "no_multiple_runtime_env_anchors"
-    - "no_installation_specific_drive_locator_outside_env"
-  ready_state: "INSTALLATION_READY"
+    - "registry_typed_relations_preserved"
+    - "brain_artifact_layering_supported"
+    - "artifact_index_required"
+    - "runtime_state_ephemeral"
+    - "human_gate_preserved"
+    - "failure_contract_preserved"
+    - "google_drive_not_required_for_installation"
+    - "no_installation_specific_locator_in_canonical_kernel_or_distribution"
+  ready_state: "CANONICAL_DISTRIBUTION_READY"
 
 failure:
+  descriptor_not_found: "EDUHARNESS_DESCRIPTOR_NOT_FOUND"
+  descriptor_invalid: "EDUHARNESS_DESCRIPTOR_INVALID"
   distribution_not_found: "DISTRIBUTION_NOT_FOUND"
   distribution_invalid: "DISTRIBUTION_INVALID"
   source_missing: "SOURCE_UNAVAILABLE"
   runtime_incompatible: "RUNTIME_INCOMPATIBLE"
-  install_root_exists: "INSTALL_ROOT_EXISTS"
   env_ambiguous: "ENV_AMBIGUOUS"
   env_generation_failed: "INSTALL_ENV_GENERATION_FAILED"
   env_invalid: "INSTALL_ENV_INVALID"
   registry_unavailable: "EDU_REGISTRY_UNAVAILABLE"
   brain_index_unavailable: "BRAIN_INDEX_UNAVAILABLE"
+  artifact_index_unavailable: "ARTIFACT_INDEX_UNAVAILABLE"
+  artifact_unresolved: "ARTIFACT_UNRESOLVED"
   brain_index_migration_failed: "BRAIN_INDEX_MIGRATION_FAILED"
-  curriculum_resource_incomplete: "CURRICULUM_RESOURCE_INCOMPLETE"
   write_failed: "SAVE_FAILED"
-  skill_package_incomplete: "SKILL_PACKAGE_INCOMPLETE"
   verification_failed: "SAVE_UNVERIFIED"

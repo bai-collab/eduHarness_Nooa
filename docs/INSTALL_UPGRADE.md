@@ -4,137 +4,211 @@
 
 ## 一句話版本
 
-- **第一次安裝**：老師建立空白 Google Drive root → 建立 ChatGPT Project → 把 `00_PROJECT_INSTRUCTIONS.yaml` 貼入 Project Instructions → 對 ChatGPT 說「安裝 eduHarness Cloud，這是我的 Drive root：...」。
-- **之後升級**：不用重貼 Project Instructions。直接在原 Project 說「升級 eduHarness Cloud 到最新版」，系統會讀本機 ENV、檢查 GitHub Distribution、建立 snapshot、顯示影響範圍、取得 Human Gate 後，只更新受管理的 runtime files / Skills / curriculum resources；Brain Index 只有在 Manifest 明確要求且 entry 缺失時才做 additive migration。
+- **第一次安裝**：建立 ChatGPT Project → 貼 Portable Kernel → 使用 default profile（Notion Control Plane + Dropbox Storage）執行安裝 → 建立 Bootstrap Descriptor / ENV → fresh-start 驗證。
+- **之後升級**：從現有 Bootstrap Descriptor 開始，解析 ENV / Control Plane / Storage，對照 GitHub stable Distribution；先做 diff / recovery plan，必要 Human Gate 後只修改 managed resources，最後重新從 Descriptor 驗證。
 
-## 為什麼一般升級不用重貼 Project Instructions？
+Google Drive 不再是 fresh installation 必要 root；它只保留為 optional/legacy storage provider 或 migration source。
 
-`00_PROJECT_INSTRUCTIONS.yaml` 是 Portable Kernel，刻意保持穩定。現在的 Kernel `eduHarness Cloud v1.4.1 Compact Portable Kernel` 已支援 Registry schema 2，因此一般 Skill、Registry、State Builder、observability、installer 與 Distribution-managed curriculum 演進，都應在 Drive installation / GitHub Distribution 層處理。
+## Architecture roles
 
-只有未來 Kernel 本身出現 breaking runtime / governance change，Distribution Manifest 才會標示需要 Project Instructions migration。
-
-## 課綱是必要 Distribution Resource
-
-教案工作依賴 `10_KNOWLEDGE_BASE/課綱_各領域` 作為正式參考來源。因此 fresh installation 只建立空白 `10_KNOWLEDGE_BASE` 不算完成。
-
-- Distribution-managed：`10_KNOWLEDGE_BASE/課綱_各領域/**`
-- User-owned：同一 `10_KNOWLEDGE_BASE` 中上述 subtree 以外的教師自訂教材、校本資料、教學筆記與其他 Knowledge。
-- 一般教案先讀 `課綱_各領域/README_課綱索引.md`，再依領域與學習階段按需載入，不預設讀取所有課綱。
+```text
+GitHub = Canonical Distribution
+Bootstrap Descriptor = installation entry
+ENV = installation config
+Registry = capability / routing
+Brain Index = knowledge / memory logical index
+Artifact Index = logical artifact resolution
+Control Plane default = Notion
+Storage Provider default = Dropbox
+Runtime State = ephemeral
+Google Drive = optional / legacy storage
+```
 
 ## 新安裝
 
-### 老師要做的事
-1. 在自己的 Google Drive 建立一個空白資料夾，作為 eduHarness root。
-2. 複製該資料夾 URL。
-3. 建立 ChatGPT Project。
-4. 把 GitHub `00_PROJECT_INSTRUCTIONS.yaml` 全文貼入 Project Instructions。
-5. 在 Project 對話輸入：
+### 使用者要做的事
+1. 建立 ChatGPT Project。
+2. 貼入 `00_PROJECT_INSTRUCTIONS.yaml`。
+3. 確認 default profile 所需 Notion / Dropbox connection 可用。
+4. 輸入安裝指令。
 
 ```text
-安裝 eduHarness Cloud
-這是我的 Google Drive root：<你的資料夾 URL>
+安裝 eduHarness Cloud。
+請依官方 GitHub Canonical Distribution 使用預設 installation profile，
+完成後從 Bootstrap Descriptor fresh-start 驗證。
 ```
 
-### 系統會做的事
-1. 從 Project Kernel 宣告的 GitHub upstream 讀取 `00_EDUHARNESS_DISTRIBUTION.yaml`。
-2. 驗證 Distribution compatibility / required resources。
-3. 檢查老師提供的 Drive root 是否可唯一識別與寫入。
-4. 建立標準資料夾。
-5. 安裝：
-   - Registry schema 2
-   - Runtime State Builder / guard contract 2.1
-   - Audit Trace Contract
-   - Runtime Trace Adapter
-   - 最新 portable Brain Index
-   - 完整 Skill packages
-   - `10_KNOWLEDGE_BASE/課綱_各領域/**`
-6. 依老師的 Drive root 產生正式 `00_EDUHARNESS_ENV.yaml`。
-7. 重新由正式 ENV bootstrap，read-back 驗證所有 required resources，包括 curriculum index 與各必要領域檔。
-8. 課綱缺失、不可讀或 reconstruct 不完整時回報 `CURRICULUM_RESOURCE_INCOMPLETE`，不得宣稱 `INSTALLATION_READY`。
-9. 全部 PASS 才宣稱 `INSTALLATION_READY`。
+### 系統要做的事
+1. 讀 GitHub Distribution Manifest 與 required contracts。
+2. 選 provider profile；default = Notion + Dropbox。
+3. 規劃 Control Plane resources：ENV、Registry、Brain Index、Artifact Index。
+4. 規劃 Storage roles：artifacts、output、work_area。
+5. 建立/安裝 Distribution-managed Skills / Knowledge artifacts。
+6. 建立 logical artifact mapping。
+7. 建立 Registry / Brain logical bindings。
+8. 產生 provider-neutral正式 ENV。
+9. 建立 Bootstrap Descriptor。
+10. 從 Descriptor 重新讀取所有 required resources。
+11. provider 支援 stable identity/revision 時執行 read-back。
+12. 全部 PASS 才宣稱 `INSTALLATION_READY`。
 
-## 升級
-
-在既有 eduHarness Project 中輸入：
+## Logical artifact model
 
 ```text
-升級 eduHarness Cloud 到最新版
+Registry / Brain Index
+  ↓
+logical artifact:// ID
+  ↓
+Artifact Index
+  ↓
+provider stable identity + optional revision/path hint
+  ↓
+Storage Provider
 ```
 
-系統必須先：
-1. 讀正式 local ENV。
-2. 讀 local Registry / Brain Index / runtime contracts / Skills / managed curriculum subtree。
-3. 讀 GitHub stable Distribution Manifest。
-4. 做 Kernel compatibility preflight。
-5. 比對 managed resources。
-6. 對會被覆寫的 Registry / runtime contracts / Skill packages / curriculum resources 建 rollback snapshot 到 `ENV.workspace.work_area`。
-7. 若 Manifest 宣告 Brain Index migration 且 local index 缺少必要 entry，另 snapshot local Brain Index，準備 additive migration。
-8. 顯示此次 upgrade scope、保留項目、Brain Index migration scope 與 rollback plan。
-9. 在 managed production overwrite / Brain Index migration 前取得 Human Gate。
+### Identity rule
+- logical artifact ID 是 control-plane identity。
+- provider 有 stable ID 時，stable ID 優先於 path。
+- path 只作 hint/fallback，不得取代 strong stable identity。
+- provider 支援 revision 時，revision read-back 是 verification evidence。
 
-## 升級時會保留什麼？
+## 升級 preflight
 
-預設不碰：
-- `00_EDUHARNESS_ENV.yaml`
-- local Brain Index 的既有 entries；僅允許 Manifest 明確宣告的 additive migration entry
-- `10_KNOWLEDGE_BASE` 中 `課綱_各領域` 以外的 user-owned Knowledge
-- 老師的 Experience / Error Log
-- 老師自己累積的 Templates
-- `50_WORKSPACE`
-- `80_SHARED_RESOURCES`
-- `90_OUTPUT`
-- `98_REVIEW_LATER`
-- `99_ARCHIVE`
+升級前必須：
+1. 讀 Bootstrap Descriptor。
+2. 驗證 Descriptor → ENV。
+3. 讀正式 ENV，解析實際 Control Plane / Storage providers。
+4. 讀 current Registry / Brain Index / Artifact Index。
+5. 讀 GitHub stable Distribution。
+6. 檢查 Kernel / ENV / Registry compatibility。
+7. 比對 logical artifacts 與 provider identities。
+8. 建立精確 mutation scope。
+9. 建立 recovery / rollback plan。
+10. 在重大 production mutation 前取得 Human Gate。
 
-## 升級時會更新什麼？
+任何 preflight failure → 不進行 partial upgrade。
 
-Distribution-managed resources：
-- `00_ADMIN/00_EDU_SKILL_REGISTRY.yaml`
-- `00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml`
-- `00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml`
-- `00_ADMIN/REGISTRY_V2_1_RUNTIME_TRACE_ADAPTER.yaml`
-- `00_ADMIN/SKILLS/**`
-- `10_KNOWLEDGE_BASE/課綱_各領域/**`
-- Manifest 明確宣告的 portable Brain Index additive migration entry
+## Preserve set
 
-Skill 以完整 package 為單位同步，不允許只更新 `SKILL.md` 卻漏掉 references/templates/assets。
-課綱只允許更新 Distribution-managed subtree，不允許以整個 `10_KNOWLEDGE_BASE` 為覆寫單位。
-Brain Index 不以 canonical file 全量覆寫 existing installation；migration 必須 additive merge 並保留既有 entries。
+一般升級預設不碰：
+- installation-specific Descriptor identity / locator，除非明確 migration；
+- 正式 ENV，除非明確 schema migration；
+- Brain Index 中 user-owned / pre-existing entries，除非明確 additive migration；
+- user-owned Knowledge；
+- user Templates；
+- Experience / Error Log；
+- user outputs；
+- Runtime State（預設 ephemeral，根本不應進 managed set）。
 
-## 升級驗證
+## Managed set
 
-更新後必須重新從原正式 ENV 啟動並驗證：
-- Registry schema = 2
-- routing guard contract = 2.1
-- Registry Skill targets 全部存在
-- State Builder reference 可讀
-- Audit Trace Contract / Trace Adapter 可讀
-- installed Skills 數量符合 Distribution Manifest
-- Brain Index 可解析 `課綱_各領域/README_課綱索引.md`
-- 若有 Brain Index migration，migration 前既有 entries 全部仍存在
-- curriculum index 與 Manifest 要求的 11 個領域／總綱檔案可讀
-- user-owned Knowledge 沒被覆寫
-- 其他 user data 沒被覆寫
-- installation-specific Drive locator 沒有跑到 ENV 以外
+Distribution 可管理：
+- Registry canonical semantics；
+- Distribution-managed Skill artifacts；
+- Distribution-managed Knowledge artifacts；
+- Manifest 明確宣告的 Brain Index additive migration；
+- Manifest 明確宣告的 Artifact Index mapping/remap；
+- provider-neutral canonical contracts。
 
-任何一項 FAIL → 使用 snapshot rollback managed resources；若做過 Brain Index migration，同時回復 migration 前 index，再重新 bootstrap 驗證。
+## Mutation ordering
 
-## Rollback 邊界
+建議 dependency-safe order：
 
-Rollback 只恢復本次更新的 Distribution-managed resources：Registry、runtime contracts、Skill packages 與 `課綱_各領域`；若本次執行過 Brain Index additive migration，則只回復該 migration 造成的 index 變更或使用其 snapshot 還原。
+```text
+canonical contracts
+→ Control Plane schema/resources if required
+→ Registry
+→ managed Skill/Knowledge storage artifacts
+→ Artifact Index mappings
+→ Brain Index additive mappings
+→ ENV/Descriptor migration only when explicitly required
+→ fresh-start verification
+```
 
-不得因 rollback 刪除或回退：
-- 正式 ENV
-- Brain Index 中本次 migration 前已存在的其他 entries
-- `10_KNOWLEDGE_BASE` 其他 user-owned Knowledge
-- Experience / Error Log
-- Workspace / Output
-- 教師自訂 Templates 或其他私人資料
+不應把升級定義成「覆寫一組 Google Drive files」。mutation 必須在 logical control-plane / artifact 層描述，再由 provider adapter 實作。
 
-## 安全邊界
+## Human Gate
 
-- GitHub = Canonical Distribution；不是老師的工作區。
-- Google Drive = 老師自己的 runtime installation。
-- ENV = installation-specific locator，不是 credential。
-- 不把別人的 ENV、Drive URL、私人 Brain、學生個資、secrets、tokens 或工作 trace 放入 Distribution。
-- 大量覆寫、managed curriculum overwrite、Brain Index migration、rollback、正式治理修改都需要 Human Gate。
+下列操作必須先取得明確核准：
+- production Control Plane schema/record 大量變更；
+- Registry governance / routing mutation；
+- managed artifact overwrite；
+- Brain Index migration；
+- Artifact Index remap；
+- provider migration；
+- 刪除資料；
+- rollback overwrite；
+- GitHub Canonical Distribution promotion。
+
+## Recovery / rollback
+
+Rollback 不假設單一 provider 技術。
+
+### Control Plane
+依 provider 能力使用 snapshot、history、record reconstruction 或其他可驗證回復機制。
+
+### Dropbox
+可使用 stable identity / revision 作 recovery evidence；但任何實際 restore 都仍是 mutation，需遵守 Human Gate。
+
+### Google Drive / other provider
+依 adapter 能力執行，不得把 Dropbox revision contract 強套到其他 provider。
+
+### Recovery invariants
+- 只回復本次 mutation 影響的 managed resources。
+- 不刪除 user-owned data。
+- 不把舊 runtime state 恢復成 production state。
+- 回復完成後必須從 Bootstrap Descriptor fresh-start 再驗證。
+
+## Upgrade verification
+
+至少驗證：
+- Descriptor 可定位 ENV；
+- ENV schema/config valid；
+- Registry schema 2 與 typed relations 完整；
+- Brain Index logical refs 可解析；
+- Artifact Index logical IDs 可解析；
+- required Skill/Knowledge artifacts 可由 Storage Provider 實際讀取；
+- stable identity/revision read-back（provider 支援時）；
+- storage `artifacts` / `output` / `work_area` roles 存在；
+- Runtime State 仍為 ephemeral；
+- Human Gate / failure codes 未退化；
+- Canonical Kernel/Distribution 無 installation-specific locator leakage；
+- fresh installation 不要求 Google Drive root。
+
+任何 required check FAIL → 不可宣稱 `UPGRADE_READY`。
+
+## Provider migration
+
+從 legacy Drive-centric installation 遷移到 v0.2 時：
+1. 舊 Drive 可作 migration source。
+2. 不把舊 Drive root/path schema 複製進新 Kernel/Brain/Registry。
+3. 把可重用 artifacts 匯入選定 Storage Provider。
+4. 建立新的 Artifact Index mappings。
+5. Brain/Registry 改引用 logical refs。
+6. 新 ENV 保存新 provider config。
+7. 建立/更新 Descriptor。
+8. fresh-start verification PASS 後才完成 cutover。
+9. legacy data 的刪除不是 migration 完成的必要條件；若要刪除，另走 Human Gate。
+
+## Failure codes
+
+核心：
+- `EDUHARNESS_DESCRIPTOR_NOT_FOUND`
+- `EDUHARNESS_DESCRIPTOR_INVALID`
+- `EDUHARNESS_ENV_NOT_FOUND`
+- `ENV_AMBIGUOUS`
+- `EDUHARNESS_ENV_INVALID`
+- `EDU_REGISTRY_UNAVAILABLE`
+- `BRAIN_INDEX_UNAVAILABLE`
+- `ARTIFACT_INDEX_UNAVAILABLE`
+- `ARTIFACT_UNRESOLVED`
+- `SKILL_UNAVAILABLE`
+- `SOURCE_UNAVAILABLE`
+- `ACCESS_UNAVAILABLE`
+- `RUNTIME_INCOMPATIBLE`
+- `REGISTRY_GRAPH_INVALID`
+- `SKILL_ROUTE_LOOP`
+- `SAVE_FAILED`
+- `SAVE_UNVERIFIED`
+
+provider / installer 可定義更細 failure code，但不可取代核心治理語意。

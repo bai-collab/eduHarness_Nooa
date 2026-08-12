@@ -1,4 +1,4 @@
-schema_version: "1.0"
+schema_version: "1.1"
 contract: "eduHarness Runtime Trace Adapter"
 status: active
 runtime_ssot: true
@@ -7,6 +7,7 @@ scope:
   registry_schema_major: 2
   routing_guard_contract_version: "2.1"
   audit_trace_contract_schema: "1.0"
+  architecture_revision: "v0.2"
   runtime_targets: [chatgpt_web, gemini_spark]
 
 ownership:
@@ -34,7 +35,7 @@ emission_points:
   - after_verification
 
 persistence_policy:
-  default: ephemeral_no_drive_write
+  default: ephemeral_no_automatic_persistence
   persist_when_any:
     - explicit_user_audit_request
     - verification_FAIL
@@ -52,7 +53,8 @@ persistence_policy:
     - routine_success_without_audit_need
     - simple_read_only_task
     - normal_SAFE_STOP_without_material_diagnostic
-  destination_if_persisted: "ENV.workspace.work_area"
+  destination_if_persisted: "ENV.storage.work_area"
+  destination_resolution_rule: "Resolve actual Storage Provider and work_area locator from the formal ENV; do not assume a Google Drive path or any provider-specific filesystem."
   file_name_rule: "RUNTIME_TRACE_<YYYYMMDD>_<opaque_trace_id>.yaml"
   identity_rule: "filename and trace_id must not encode user/student identity, class, email, or source title"
 
@@ -74,6 +76,8 @@ failure_behavior:
     diagnostic: TRACE_ASSEMBLY_FAILED
   persistence_failure:
     action: "routing/execution remains governed by Primary Skill; report SAVE_FAILED when persistence was required"
+  storage_resolution_failure:
+    action: "do not guess another provider or locator; report SOURCE_UNAVAILABLE or ACCESS_UNAVAILABLE as applicable"
   prohibited_data_detected:
     action: "redact or skip persistence; never persist prohibited payload"
     diagnostic: TRACE_PRIVACY_BLOCKED
@@ -85,3 +89,10 @@ human_gate_policy:
   Registry_observability_reference_change: required
   student_identifiable_trace_persistence: required
   deletion_or_bulk_move_of_traces: required
+
+compatibility:
+  bootstrap_entry: "Bootstrap Descriptor"
+  env_role: "installation config"
+  storage_role: "provider-neutral storage adapter"
+  google_drive: "optional/legacy storage provider only"
+  rule: "Legacy references to ENV.workspace.work_area or drive-specific persistence are superseded by ENV.storage.work_area and the Storage Adapter Contract."

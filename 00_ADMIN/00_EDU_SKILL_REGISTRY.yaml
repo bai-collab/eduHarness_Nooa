@@ -227,9 +227,8 @@ skills:
     constraints: {human_gate_if: []}
     source:
       kind: "github-port+local-extension"
-      upstream_version: "2.1"
-      canonical_sha256: "603B16E7C3377DA51A688D2F4F33FAAF5E9BD031AFAADA6C668CFDC876029699"
-      provenance: "Cloud production extension approved 2026-08-12; Prompt Architecture + structural prompting + Style Recipes + Visual QA + fast_generate/discuss_first/edit_existing interaction routing."
+      upstream_version: "2.3"
+      provenance: "Cloud production promotion approved 2026-08-13; v2.2 educational_codesign + Educational Semantic Layer + Series Continuity; v2.3 view-dependent topology, perspective-aware occlusion, duplicate-for-visibility prevention, QA/repair updates."
     cloud: {port_mode: "functional-adaptation", sync_status: "canonical"}
 
   - id: image-to-3d-scene

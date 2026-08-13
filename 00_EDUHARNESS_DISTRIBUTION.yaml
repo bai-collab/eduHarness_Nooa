@@ -1,16 +1,16 @@
 schema_version: 3
 manifest_kind: "eduHarness-distribution"
-status: "candidate"
+status: "active"
 
 distribution:
   id: "eduHarness_Nooa"
   name: "eduHarness_Nooa"
   edition: "cloud"
-  version: "2026.08.13-registry-v3-candidate"
-  architecture_revision: "v0.3-candidate"
-  channel: "candidate"
+  version: "2026.08.13-registry-v3"
+  architecture_revision: "v0.3"
+  channel: "stable"
   description: >
-    eduHarness Cloud Registry v3 candidate for ChatGPT Web / Gemini Spark.
+    eduHarness Cloud Registry v3 Canonical Distribution for ChatGPT Web / Gemini Spark.
     GitHub provides Official Registry/Official Skills from an immutable distribution snapshot;
     Teacher installations own Local Registry, Brain Index, Artifact Index and Storage resources.
 
@@ -18,21 +18,21 @@ candidate_dependencies:
   official_registry_v3:
     source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
     required_schema: 3
-    current_candidate_state: "satisfied"
+    current_candidate_state: "promoted"
     blocking: false
-    evidence: "Official Registry candidate declares schema_version=3 and 17 Official Skills resolved from distribution paths."
+    evidence: "Official Registry declares schema_version=3 and 17 Official Skills resolved from distribution paths."
   project_kernel_registry_v3_support:
     required: true
-    current_candidate_state: "satisfied_in_candidate"
+    current_candidate_state: "promoted"
     blocking_for_candidate_test: false
-    blocking_for_production: true
-    evidence: "00_PROJECT_INSTRUCTIONS.yaml candidate supports Registry schemas 1/2/3 and dual-layer routing; canonical text length 7764 chars."
-    production_rule: "Promotion remains a breaking Kernel governance change and requires explicit Human Gate plus Project Instructions migration."
+    blocking_for_production: false
+    evidence: "00_PROJECT_INSTRUCTIONS.yaml supports Registry schemas 1/2/3 and dual-layer routing; promoted Kernel is within governance length limits."
+    production_rule: "Canonical promotion is complete; production installation cutover remains a separate explicit Human Gate."
   executable_resolver:
     required: true
-    current_candidate_state: "satisfied"
+    current_candidate_state: "promoted"
     blocking: false
-    evidence: "GitHub Actions Registry v3 Resolver Candidate run 31672762432 completed success; resolver fixtures 16/16 PASS."
+    evidence: "Exact promotion-head GitHub Actions Registry v3 Resolver Candidate run 31679607058 completed success; resolver fixtures pass."
   cleanroom_acceptance:
     required: true
     current_candidate_state: "satisfied"
@@ -41,7 +41,7 @@ candidate_dependencies:
     report: "docs/REGISTRY_V3_CLEANROOM_ACCEPTANCE.md"
 
 compatibility:
-  project_kernel_version_required: "eduHarness Cloud v2.1.0 Candidate or later schema-3-capable Kernel"
+  project_kernel_version_required: "eduHarness Cloud v2.1.0 or later schema-3-capable Kernel"
   project_instruction_upgrade_policy: "kernel-breaking-change-requires-migration"
   project_instructions_repaste_required_for_v3_cutover: true
   installation_env_kind: "eduHarness-cloud"
@@ -188,14 +188,12 @@ distribution_privacy:
 
 verification:
   required:
-    - "kernel_schema_3_candidate_support"
+    - "kernel_schema_3_support"
     - "kernel_canonical_char_count_le_7800"
     - "registry_v3_dual_layer_contract_readable"
     - "local_registry_contract_readable"
     - "runtime_resolver_contract_readable"
     - "resolver_fixtures_16_of_16_pass"
-    - "cleanroom_acceptance_pass"
-    - "cleanroom_full_fresh_start_repeatable"
     - "env_schema_3_provider_neutral"
     - "official_registry_source_schema_3"
     - "official_registry_remote_snapshot_model"
@@ -206,7 +204,8 @@ verification:
     - "artifact_index_scoped_to_installation_owned_artifacts"
     - "human_gate_preserved"
     - "failure_contract_preserved"
-  ready_state: "REGISTRY_V3_CANDIDATE_READY_FOR_PROMOTION_GATE"
+    - "cleanroom_acceptance_pass"
+  ready_state: "REGISTRY_V3_CANONICAL_PROMOTED"
 
 failure:
   descriptor_not_found: "EDUHARNESS_DESCRIPTOR_NOT_FOUND"

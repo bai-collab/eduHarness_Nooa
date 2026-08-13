@@ -11,7 +11,8 @@ cases:
   - id: official_only
     description: Official candidate resolves when no Local policy applies.
     official:
-      - namespace_id: edu:lesson-plan-authoring
+      - id: lesson-plan-authoring
+        namespace_id: edu:lesson-plan-authoring
         primary_capability: lesson_plan_authoring
     local: {skills: [], disabled: []}
     expect:
@@ -24,7 +25,8 @@ cases:
     official: []
     local:
       skills:
-        - namespace_id: local:reading-coach
+        - id: reading-coach
+          namespace_id: local:reading-coach
           mode: extend
           primary_capability: reading_coaching
     expect:
@@ -35,10 +37,12 @@ cases:
   - id: local_requires_official
     description: Local Skill may require an Official Skill.
     official:
-      - namespace_id: edu:reasoning-kernel
+      - id: reasoning-kernel
+        namespace_id: edu:reasoning-kernel
     local:
       skills:
-        - namespace_id: local:research-helper
+        - id: research-helper
+          namespace_id: local:research-helper
           mode: extend
           primary_capability: research_helper
           relations:
@@ -50,11 +54,13 @@ cases:
   - id: explicit_local_override
     description: Explicit Local override replaces exactly one Official target.
     official:
-      - namespace_id: edu:lesson-plan-authoring
+      - id: lesson-plan-authoring
+        namespace_id: edu:lesson-plan-authoring
         primary_capability: lesson_plan_authoring
     local:
       skills:
-        - namespace_id: local:my-lesson-plan
+        - id: my-lesson-plan
+          namespace_id: local:my-lesson-plan
           mode: override
           overrides: {target: edu:lesson-plan-authoring}
           primary_capability: lesson_plan_authoring
@@ -66,7 +72,8 @@ cases:
   - id: local_disable_official
     description: Local policy disables exact Official Skill identity.
     official:
-      - namespace_id: edu:item-authoring
+      - id: item-authoring
+        namespace_id: edu:item-authoring
         primary_capability: item_authoring
     local:
       disabled: [edu:item-authoring]
@@ -76,14 +83,30 @@ cases:
       absent_from_effective_candidates: [edu:item-authoring]
 
   - id: local_id_collision
-    description: Local may not impersonate Official identity.
+    description: Local basename ID may not reuse an Official Skill ID, even with local namespace.
     official:
-      - namespace_id: edu:lesson-plan-authoring
+      - id: lesson-plan-authoring
+        namespace_id: edu:lesson-plan-authoring
     local:
       skills:
-        - namespace_id: edu:lesson-plan-authoring
+        - id: lesson-plan-authoring
+          namespace_id: local:lesson-plan-authoring
           mode: override
           overrides: {target: edu:lesson-plan-authoring}
+    expect:
+      result: blocked
+      diagnostic: LOCAL_SKILL_ID_COLLISION
+
+  - id: local_namespace_impersonation
+    description: Local entries may not declare an edu namespace identity.
+    official:
+      - id: lesson-plan-authoring
+        namespace_id: edu:lesson-plan-authoring
+    local:
+      skills:
+        - id: my-plan
+          namespace_id: edu:my-plan
+          mode: extend
     expect:
       result: blocked
       diagnostic: LOCAL_SKILL_ID_COLLISION
@@ -91,11 +114,13 @@ cases:
   - id: implicit_capability_collision
     description: Local extend cannot silently beat an Official Primary with the same capability.
     official:
-      - namespace_id: edu:lesson-plan-authoring
+      - id: lesson-plan-authoring
+        namespace_id: edu:lesson-plan-authoring
         primary_capability: lesson_plan_authoring
     local:
       skills:
-        - namespace_id: local:my-plan
+        - id: my-plan
+          namespace_id: local:my-plan
           mode: extend
           primary_capability: lesson_plan_authoring
     expect:
@@ -107,7 +132,8 @@ cases:
     official: []
     local:
       skills:
-        - namespace_id: local:my-plan
+        - id: my-plan
+          namespace_id: local:my-plan
           mode: override
           overrides: {target: edu:lesson-plan-authoring}
     expect:
@@ -117,13 +143,16 @@ cases:
   - id: duplicate_override_target
     description: Two Local overrides cannot target the same Official Skill.
     official:
-      - namespace_id: edu:lesson-plan-authoring
+      - id: lesson-plan-authoring
+        namespace_id: edu:lesson-plan-authoring
     local:
       skills:
-        - namespace_id: local:plan-a
+        - id: plan-a
+          namespace_id: local:plan-a
           mode: override
           overrides: {target: edu:lesson-plan-authoring}
-        - namespace_id: local:plan-b
+        - id: plan-b
+          namespace_id: local:plan-b
           mode: override
           overrides: {target: edu:lesson-plan-authoring}
     expect:
@@ -131,15 +160,19 @@ cases:
       diagnostic: LOCAL_OVERRIDE_CONFLICT
 
   - id: official_depends_on_local
-    description: Official Registry cannot author a dependency on installation-local nodes.
+    description: Official Registry cannot author a dependency on installation-local nodes; attempted cross-layer cycles are blocked here before graph construction.
     official:
-      - namespace_id: edu:official-a
+      - id: official-a
+        namespace_id: edu:official-a
         relations:
           requires: [local:helper]
     local:
       skills:
-        - namespace_id: local:helper
+        - id: helper
+          namespace_id: local:helper
           mode: extend
+          relations:
+            requires: [edu:official-a]
     expect:
       result: blocked
       diagnostic: OFFICIAL_DEPENDS_ON_LOCAL
@@ -149,9 +182,11 @@ cases:
     official: []
     local:
       skills:
-        - namespace_id: local:helper
+        - id: helper
+          namespace_id: local:helper
           mode: extend
-        - namespace_id: local:teacher-workflow
+        - id: teacher-workflow
+          namespace_id: local:teacher-workflow
           mode: extend
           relations:
             requires: [local:helper]
@@ -159,27 +194,21 @@ cases:
       result: pass
       load_required: [local:helper]
 
-  - id: cross_layer_requires_cycle
-    description: Effective graph validation blocks cycles spanning Local and Official candidates.
-    official:
-      - namespace_id: edu:official-a
-        relations:
-          requires: [edu:official-b]
-      - namespace_id: edu:official-b
-        relations:
-          requires: []
+  - id: local_requires_cycle
+    description: Effective graph validation blocks a requires cycle entirely within valid Local nodes.
+    official: []
     local:
       skills:
-        - namespace_id: local:a-override
-          mode: override
-          overrides: {target: edu:official-a}
+        - id: local-a
+          namespace_id: local:local-a
+          mode: extend
           relations:
-            requires: [edu:official-b]
-        - namespace_id: local:b-override
-          mode: override
-          overrides: {target: edu:official-b}
+            requires: [local:local-b]
+        - id: local-b
+          namespace_id: local:local-b
+          mode: extend
           relations:
-            requires: [local:a-override]
+            requires: [local:local-a]
     expect:
       result: blocked
       diagnostic: REGISTRY_GRAPH_INVALID
@@ -189,11 +218,13 @@ cases:
     project_governance:
       human_gate_required_for: [formal_assessment]
     official:
-      - namespace_id: edu:item-authoring
+      - id: item-authoring
+        namespace_id: edu:item-authoring
         primary_capability: item_authoring
     local:
       skills:
-        - namespace_id: local:fast-item-authoring
+        - id: fast-item-authoring
+          namespace_id: local:fast-item-authoring
           mode: override
           overrides: {target: edu:item-authoring}
           declared_human_gate_required_for: []
@@ -228,12 +259,13 @@ coverage_requirements:
     - explicit_local_override
     - local_disable_official
     - local_id_collision
+    - local_namespace_impersonation
     - implicit_capability_collision
     - override_target_missing
     - duplicate_override_target
     - official_depends_on_local
     - local_to_local_requires
-    - cross_layer_requires_cycle
+    - local_requires_cycle
     - human_gate_not_overridden
     - snapshot_consistency
     - snapshot_mismatch

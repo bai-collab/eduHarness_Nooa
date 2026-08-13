@@ -70,7 +70,7 @@ Example override:
 
 ### override
 - MUST target exactly one existing Official `edu:` Skill.
-- MUST use a distinct `local:` identity.
+- MUST use a distinct Local `id` and `local:` namespace identity.
 - Missing target fails closed.
 - Two active Local entries overriding the same Official target fail closed.
 - Override does not bypass Project governance or Human Gate.
@@ -86,11 +86,13 @@ policies:
 
 Only exact Official Skill identities may be disabled. Kernel/project governance cannot be disabled here.
 
-## Namespace rules
+## Namespace and identity rules
 - `namespace` MUST equal `local`.
 - each `namespace_id` MUST begin with `local:`.
 - `id` MUST be unique within Local Registry.
-- local `id`/`namespace_id` MUST NOT impersonate an Official identity.
+- Local `id` MUST NOT equal any Official Skill `id`, even when the Local entry is an override.
+- Local `namespace_id` MUST NOT equal or impersonate an Official `edu:` identity.
+- Override therefore requires a distinct Local basename such as `my-lesson-plan`, not `lesson-plan-authoring`.
 
 ## Artifact rules
 Local Skill package resolution:
@@ -112,7 +114,7 @@ Local entries may reference:
 - `edu:*` Official Skills;
 - `local:*` Local Skills.
 
-Official Registry entries may not reference Local Skills. This asymmetry preserves Official portability.
+Official Registry entries may not reference Local Skills. This asymmetry preserves Official portability and means attempted cross-layer cycles are rejected before effective graph construction.
 
 Typed relations retain their Registry semantics and MUST NOT be flattened:
 - `requires`: mandatory load dependency;

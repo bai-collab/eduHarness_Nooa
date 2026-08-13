@@ -38,6 +38,8 @@ Quest State 是答案、得分、進度與完成狀態的唯一真相。Three.js
 
 必要事件欄位：`contractVersion`、`eventId`、`sceneInstanceId`、`questRevision`、`correlationId`、`type`、`payload`。`animation.completed` 不得直接控制關卡。
 
+使用自適應網頁拓樸技術，先規劃版面空間、各 DOM 元件的大小與擺放位置；確認在目標視窗尺寸下，各 DOM 元件不會互相擠壓、變形、溢出或被裁切後，才能開始撰寫 CSS。
+
 若採固定單頁介面，必須預先定義 viewport／overflow 契約：頁面本身不得意外產生 body 捲軸；會超出的內容區使用內部 `overflow-y: auto|scroll`；控制列不得被裁切。
 
 ### Gate 5：驗證矩陣

@@ -1,194 +1,212 @@
-schema_version: 2
+schema_version: 3
 manifest_kind: "eduHarness-distribution"
-status: "stable"
+status: "candidate"
 
 distribution:
   id: "eduHarness_Nooa"
   name: "eduHarness_Nooa"
   edition: "cloud"
-  version: "2026.08.13"
-  architecture_revision: "v0.2"
-  channel: "stable"
+  version: "2026.08.13-registry-v3-candidate"
+  architecture_revision: "v0.3-candidate"
+  channel: "candidate"
   description: >
-    eduHarness Cloud Canonical Distribution for ChatGPT Web / Gemini Spark.
-    GitHub 是 Canonical Distribution；Bootstrap Descriptor 是 installation entry；
-    Notion 是 default Control Plane；Dropbox 是 default Storage Provider；Google Drive 為 optional/legacy storage provider。
+    eduHarness Cloud Registry v3 candidate for ChatGPT Web / Gemini Spark.
+    GitHub provides Official Registry/Official Skills from an immutable distribution snapshot;
+    Teacher installations own Local Registry, Brain Index, Artifact Index and Storage resources.
+
+candidate_dependencies:
+  official_registry_v3:
+    source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+    required_schema: 3
+    current_candidate_state: "satisfied"
+    blocking: false
+    evidence: "Official Registry candidate declares schema_version=3 and 17 Official Skills resolved from distribution paths."
+  project_kernel_registry_v3_support:
+    required: true
+    current_candidate_state: "satisfied_in_candidate"
+    blocking_for_candidate_test: false
+    blocking_for_production: true
+    evidence: "00_PROJECT_INSTRUCTIONS.yaml candidate supports Registry schemas 1/2/3 and dual-layer routing; canonical text length 7764 chars."
+    production_rule: "Promotion remains a breaking Kernel governance change and requires explicit Human Gate plus Project Instructions migration."
+  executable_resolver:
+    required: true
+    current_candidate_state: "satisfied"
+    blocking: false
+    evidence: "GitHub Actions Registry v3 Resolver Candidate run 31672762432 completed success; resolver fixtures 16/16 PASS."
+  cleanroom_acceptance:
+    required: true
+    current_candidate_state: "satisfied"
+    blocking: false
+    evidence: "Registry v3 isolated Notion + Dropbox + GitHub clean-room acceptance passed, including Local extend, explicit override, Human Gate preservation, and full fresh-start repeatability."
+    report: "docs/REGISTRY_V3_CLEANROOM_ACCEPTANCE.md"
 
 compatibility:
-  project_kernel_version: "eduHarness Cloud v2.0.0 Compact Portable Kernel"
-  previous_kernel_version: "eduHarness Cloud v1.4.1 Compact Portable Kernel"
+  project_kernel_version_required: "eduHarness Cloud v2.1.0 Candidate or later schema-3-capable Kernel"
   project_instruction_upgrade_policy: "kernel-breaking-change-requires-migration"
-  project_instructions_repaste_required_for_normal_upgrade: false
-  project_instructions_repaste_required_for_v2_cutover: true
+  project_instructions_repaste_required_for_v3_cutover: true
   installation_env_kind: "eduHarness-cloud"
   installation_edition: "cloud"
-  env_schema: 2
-  registry_schema: 2
+  env_schema: 3
+  official_registry_schema: 3
+  local_registry_schema: 1
+  local_overlay_contract_version: 1
   routing_guard_contract_version: "2.1"
   runtime_targets: [chatgpt_web, gemini_spark]
+  legacy_registry_schema_support: [1, 2]
 
 architecture:
   installation_entry: "bootstrap_descriptor"
   env_role: "installation_config"
-  registry_role: "capability_routing"
+  official_registry_role: "canonical_distribution_routing"
+  local_registry_role: "installation_routing_overlay"
+  effective_routing_view: "runtime_ephemeral"
   brain_index_role: "knowledge_memory_logical_index"
-  artifact_index_role: "logical_artifact_resolution"
+  artifact_index_role: "installation_owned_artifact_resolution"
   runtime_state: "ephemeral"
   default_control_plane: "notion"
   default_storage_provider: "dropbox"
   optional_storage_providers: [google_drive]
-  provider_rule: "Default providers are distribution defaults, not Kernel-global hard dependencies. Resolve actual providers from Descriptor/ENV."
+  provider_rule: "Default providers are distribution defaults, not Kernel-global hard dependencies. Resolve actual installation providers from Descriptor/ENV."
 
 installation:
-  strategy: "descriptor-first"
+  strategy: "descriptor-first-dual-registry"
   bootstrap_skill: "cloud-bootstrap"
   provider_profile_default: "notion+dropbox"
   preexisting_installation_policy: "inspect-before-write"
   overwrite_policy: "human-gate"
   google_drive_root_required: false
-  managed_artifact_transfer_policy: "deterministic-and-canonical-equivalence-verified"
+  official_skill_installation_mirror_required: false
+  official_registry_installation_copy_required: false
+  local_registry_required: true
   model_regeneration_as_transport_allowed: false
 
 upstream:
   source: "project-kernel"
   repository_field: "upstream.repository"
   branch_field: "upstream.branch"
-  rule: "Canonical Distribution 從 Project Kernel 宣告的 GitHub upstream 解析；不得要求教師提供 GitHub distribution locator。"
+  snapshot_policy: "resolve branch to immutable commit before loading Official Registry/Skill/Knowledge"
+  rule: "一次 execution 內 Official Registry/Skill/Knowledge 必須使用同一 immutable commit snapshot。"
 
 canonical_contracts:
   bootstrap_descriptor: {source: "docs/BOOTSTRAP_DESCRIPTOR_CONTRACT.md", required: true}
+  registry_v3_dual_layer: {source: "docs/REGISTRY_V3_DUAL_LAYER_CONTRACT.md", required: true}
+  local_registry: {source: "docs/LOCAL_REGISTRY_CONTRACT.md", required: true}
+  runtime_resolver: {source: "00_ADMIN/REGISTRY_V3_RUNTIME_RESOLVER.yaml", required: true}
   control_plane: {source: "docs/CONTROL_PLANE_CONTRACT.md", required: true}
   storage_adapter: {source: "docs/STORAGE_ADAPTER_CONTRACT.md", required: true}
   runtime_state: {source: "docs/RUNTIME_STATE_CONTRACT.md", required: true}
-  production_readiness: {source: "docs/PRODUCTION_READINESS.md", required: true}
-  master_plan: {source: "docs/EDUHARNESS_CLOUD_V0_2_MASTER_PLAN.md", required: true}
 
 resources:
   install_guide: {type: file, source: "INSTALL.md", required: true}
   upgrade_guide: {type: file, source: "docs/INSTALL_UPGRADE.md", required: true}
   project_kernel: {type: file, source: "00_PROJECT_INSTRUCTIONS.yaml", required: true}
   env_template: {type: file, source: "00_EDUHARNESS_ENV_TEMPLATE.yaml", required: true}
-  registry: {type: logical_control_plane_resource, source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml", required: true}
-  brain_index: {type: logical_control_plane_resource, source: "00_ADMIN/01_BRAIN_INDEX.yaml", required: true}
+  official_registry: {type: canonical_distribution_resource, source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml", required: true, ownership: "official"}
+  local_registry_template: {type: installation_template, source: "00_ADMIN/LOCAL_REGISTRY_TEMPLATE.yaml", required: true, ownership: "installation"}
+  resolver_contract: {type: runtime_contract, source: "00_ADMIN/REGISTRY_V3_RUNTIME_RESOLVER.yaml", required: true}
+  resolver_fixtures: {type: regression_fixture, source: "00_ADMIN/REGISTRY_V3_RESOLVER_FIXTURES.yaml", required: true}
+  resolver_test: {type: validation_tool, source: "tools/registry-v3-resolver", required: true}
+  brain_index: {type: installation_control_plane_resource, required: true}
   artifact_index: {type: installation_control_plane_resource, required: true}
   bootstrap_descriptor: {type: installation_entry_resource, required: true}
-  skills: {type: logical_artifacts, source: "00_ADMIN/SKILLS", required: true}
-  curriculum_standards:
-    type: logical_knowledge_artifacts
-    source: "10_KNOWLEDGE_BASE/課綱_各領域"
-    required: true
-    ownership: "distribution-managed"
-    loading: "on-demand-relevant-domain-only"
-
-artifact_transfer_contract:
-  scope: "all distribution-managed Skill and Knowledge artifacts"
-  source_identity_required: true
-  source_content_evidence_required: true
-  deterministic_transfer_required: true
-  destination_content_readback_required: true
-  canonical_equivalence_required: true
-  stable_identity_readback_required_when_supported: true
-  revision_readback_required_when_supported: true
-  verified_binding_before_equivalence_allowed: false
-  forbidden_fallbacks:
-    - "model paraphrase/regeneration/manual reconstruction used as transport"
-    - "write-success-only verification"
-    - "size-only or visual-similarity-only equivalence"
-  failure:
-    source_evidence_unavailable: "SOURCE_UNAVAILABLE"
-    transfer_path_unavailable: "RUNTIME_INCOMPATIBLE"
-    write_failed: "SAVE_FAILED"
-    equivalence_unverified: "SAVE_UNVERIFIED"
+  official_skills: {type: canonical_distribution_artifacts, source: "00_ADMIN/SKILLS", required: true, ownership: "official", loading: "on_demand"}
+  curriculum_standards: {type: canonical_distribution_knowledge, source: "10_KNOWLEDGE_BASE/課綱_各領域", required: true, ownership: "official", loading: "on_demand-relevant-domain-only"}
 
 bootstrap_contract:
   sequence:
     - "resolve canonical Distribution"
+    - "pin immutable distribution snapshot"
+    - "verify active Kernel supports Official Registry schema 3"
+    - "verify Official Registry source itself is schema 3"
     - "resolve or create installation Bootstrap Descriptor"
     - "resolve formal ENV from Descriptor"
-    - "resolve Control Plane and Storage providers from ENV"
-    - "resolve Registry / Brain Index / Artifact Index"
-    - "preflight deterministic verified artifact transfer capability"
-    - "install distribution-managed artifacts"
-    - "verify destination canonical equivalence before verified Artifact Index binding"
-    - "resolve logical Skill/Knowledge artifacts through Artifact Index"
-    - "verify provider stable identity and revision when supported"
-    - "verify storage artifacts/output/work_area"
+    - "resolve installation Control Plane and Storage providers from ENV"
+    - "create/resolve Local Registry, Brain Index and Artifact Index"
+    - "verify artifacts/output/work_area"
+    - "read Official Registry from pinned snapshot"
+    - "validate Official Registry and Local Registry independently"
+    - "apply REGISTRY_V3_RUNTIME_RESOLVER contract and build ephemeral Effective Routing View"
+    - "resolve Official Skills directly from pinned snapshot on demand"
+    - "resolve Local Skills through Local Registry -> Artifact Index -> installation Storage"
     - "fresh-start bootstrap from Descriptor"
   completion: "INSTALLATION_READY"
 
 artifact_resolution:
-  rule: "Registry/Brain records SHOULD point to logical artifact:// references. Artifact Index resolves logical IDs to provider identity. Stable provider identity is authoritative over path when available."
-  required_fields: [artifact_id, provider, identity_type, identity_value, identity_strength, status]
-  revision_readback: "required when provider exposes revisions"
-  verified_binding_rule: "distribution-managed artifact status may be verified only after canonical-equivalence verification passes"
+  official_rule: "Official Registry/Skill/Knowledge resolve directly from the pinned Canonical Distribution snapshot and do not require installation Artifact Index mirrors."
+  local_rule: "Local Registry/Brain installation-owned refs resolve through artifact:// -> Artifact Index -> provider stable identity/revision/path hint."
+  local_required_fields: [artifact_id, provider, identity_type, identity_value, identity_strength, status]
+  revision_readback: "required when provider exposes revisions for installation-owned artifacts"
+
+artifact_transfer_contract:
+  fresh_install_official_scope: "none"
+  applies_to:
+    - "installation-owned Local Skill/Knowledge artifacts written to Storage"
+    - "explicit legacy migration/import where byte-preserving canonical equivalence is required"
+  source_identity_required_when_canonical_transfer: true
+  deterministic_transfer_required_when_canonical_transfer: true
+  destination_content_readback_required_when_canonical_transfer: true
+  model_regeneration_as_transport_allowed: false
 
 upgrade_contract:
-  detect:
-    - "read current Bootstrap Descriptor"
-    - "read formal ENV"
-    - "read current Registry / Brain Index / Artifact Index"
-    - "read canonical Distribution Manifest"
-  preflight:
-    - "target schemas supported by active Project Kernel"
-    - "required canonical contracts readable"
-    - "actual Control Plane and Storage providers are resolvable with current tools/ACL"
-    - "all mutation targets uniquely resolved"
-    - "all managed artifact mutations have deterministic canonical-equivalence-verifiable transfer path"
-  preserve:
-    - "installation-specific Bootstrap Descriptor locator unless migration explicitly requires replacement"
-    - "formal ENV unless migration explicitly requires schema conversion"
-    - "user-owned knowledge / experience / error logs / templates / outputs"
-    - "runtime state (ephemeral; never promoted as a managed artifact)"
-  managed:
-    - "Registry canonical semantics"
-    - "Distribution-managed Skill logical artifacts"
-    - "Distribution-managed curriculum logical artifacts"
-    - "declared Brain Index additive migrations"
-    - "declared Artifact Index mappings"
-  human_gate:
-    required_before: ["production control-plane mutation", "managed artifact overwrite", "Brain Index migration", "Artifact Index remap", "rollback overwrite", "canonical distribution promotion"]
-  verify:
-    - "fresh bootstrap from Descriptor"
-    - "ENV schema/config valid"
-    - "Registry schema=2 and typed relations preserved"
-    - "Brain Index logical refs resolve"
-    - "Artifact Index logical refs resolve to provider identities"
-    - "required Skill/Knowledge artifacts read back"
-    - "distribution-managed artifact canonical equivalence passes"
-    - "stable identity/revision read-back passes when supported"
-    - "storage artifacts/output/work_area resolve"
-    - "no installation-specific locator leaked into Kernel/Distribution"
-  rollback:
-    trigger: "any verification failure"
-    action: "use provider/control-plane adapter recovery; restore only affected managed resources; preserve user-owned data and re-run fresh bootstrap"
+  v2_to_v3:
+    source_model_change: true
+    preserve:
+      - "Bootstrap Descriptor identity unless migration requires update"
+      - "existing ENV until replacement ENV v3 verifies"
+      - "Brain Index user-owned entries"
+      - "Artifact Index user-owned entries"
+      - "all user-owned knowledge/templates/experience/error logs/output"
+      - "existing v2 Official Skill Dropbox mirrors as non-authoritative legacy cache/rollback evidence"
+    create:
+      - "Local Registry"
+      - "ENV v3 local_registry locator"
+    switch_authority:
+      official_registry: "installation copy -> pinned GitHub Official Registry"
+      official_skills: "Dropbox mirrors -> pinned GitHub Official Skills"
+    delete_during_initial_cutover: []
+    human_gate_required: true
+    verify:
+      - "Kernel supports Registry schema 3"
+      - "immutable distribution snapshot resolves"
+      - "Official Registry schema 3 validates"
+      - "Local Registry schema 1 validates"
+      - "Effective Routing View passes executable resolver fixtures/graph validation"
+      - "Official Skill full text is readable from pinned snapshot"
+      - "Local artifact refs resolve through installation Artifact Index"
+      - "fresh bootstrap from Descriptor succeeds"
+    rollback: "retain v2 resources and restore v2 ENV/Registry authority if v3 verification fails"
 
 distribution_privacy:
   never_distribute:
     - "installation-specific Notion page/database IDs"
     - "installation-specific Dropbox stable IDs or paths"
     - "installation-specific Google Drive URLs or IDs"
-    - "formal ENV or Bootstrap Descriptor from another installation"
+    - "formal ENV, Local Registry, Artifact Index or Bootstrap Descriptor from another installation"
     - "student PII or identifiable learning records"
     - "secrets, tokens, cookies, credentials or private keys"
     - "private Brain content, working traces or teacher outputs"
 
 verification:
   required:
-    - "descriptor_contract_readable"
-    - "env_template_provider_neutral"
-    - "registry_schema_2"
-    - "registry_typed_relations_preserved"
-    - "brain_artifact_layering_supported"
-    - "artifact_index_required"
-    - "managed_artifact_transfer_preflight_required"
-    - "managed_artifact_canonical_equivalence_required"
-    - "model_regeneration_not_accepted_as_transport"
-    - "runtime_state_ephemeral"
+    - "kernel_schema_3_candidate_support"
+    - "kernel_canonical_char_count_le_7800"
+    - "registry_v3_dual_layer_contract_readable"
+    - "local_registry_contract_readable"
+    - "runtime_resolver_contract_readable"
+    - "resolver_fixtures_16_of_16_pass"
+    - "cleanroom_acceptance_pass"
+    - "cleanroom_full_fresh_start_repeatable"
+    - "env_schema_3_provider_neutral"
+    - "official_registry_source_schema_3"
+    - "official_registry_remote_snapshot_model"
+    - "local_registry_installation_model"
+    - "effective_routing_view_ephemeral"
+    - "official_skill_installation_mirror_not_required"
+    - "typed_relations_and_guard_contract_preserved"
+    - "artifact_index_scoped_to_installation_owned_artifacts"
     - "human_gate_preserved"
     - "failure_contract_preserved"
-    - "google_drive_not_required_for_installation"
-    - "no_installation_specific_locator_in_canonical_kernel_or_distribution"
-  ready_state: "CANONICAL_DISTRIBUTION_READY"
+  ready_state: "REGISTRY_V3_CANDIDATE_READY_FOR_PROMOTION_GATE"
 
 failure:
   descriptor_not_found: "EDUHARNESS_DESCRIPTOR_NOT_FOUND"
@@ -196,14 +214,17 @@ failure:
   distribution_not_found: "DISTRIBUTION_NOT_FOUND"
   distribution_invalid: "DISTRIBUTION_INVALID"
   source_missing: "SOURCE_UNAVAILABLE"
+  source_conflict: "SOURCE_CONFLICT"
   runtime_incompatible: "RUNTIME_INCOMPATIBLE"
   env_ambiguous: "ENV_AMBIGUOUS"
   env_generation_failed: "INSTALL_ENV_GENERATION_FAILED"
   env_invalid: "INSTALL_ENV_INVALID"
-  registry_unavailable: "EDU_REGISTRY_UNAVAILABLE"
+  official_registry_unavailable: "EDU_REGISTRY_UNAVAILABLE"
+  local_registry_invalid: "LOCAL_REGISTRY_INVALID"
   brain_index_unavailable: "BRAIN_INDEX_UNAVAILABLE"
   artifact_index_unavailable: "ARTIFACT_INDEX_UNAVAILABLE"
   artifact_unresolved: "ARTIFACT_UNRESOLVED"
-  brain_index_migration_failed: "BRAIN_INDEX_MIGRATION_FAILED"
+  graph_invalid: "REGISTRY_GRAPH_INVALID"
+  skill_unavailable: "SKILL_UNAVAILABLE"
   write_failed: "SAVE_FAILED"
   verification_failed: "SAVE_UNVERIFIED"

@@ -1,0 +1,103 @@
+schema_version: 1
+resolver_kind: eduharness-registry-v3-runtime-resolver
+status: candidate
+
+inputs:
+  project_governance: required
+  distribution_snapshot: required
+  official_registry:
+    schema: 3
+    source: pinned_distribution_snapshot
+  local_registry:
+    schema: 1
+    source: ENV.control_plane.local_registry
+  artifact_index:
+    scope: installation_owned
+
+preconditions:
+  - distribution_snapshot_ref_is_immutable
+  - official_registry_schema_3
+  - local_registry_schema_1
+  - official_namespace_is_edu
+  - local_namespace_is_local
+
+resolution_order:
+  - validate_project_governance
+  - validate_snapshot_consistency
+  - validate_official_registry
+  - validate_local_registry
+  - validate_cross_layer_identity
+  - validate_cross_layer_relations
+  - apply_local_disable
+  - apply_local_override
+  - add_local_extend
+  - detect_capability_conflict
+  - build_effective_view
+  - validate_effective_graph
+  - selection
+  - entry_routes
+  - primary_confirmation
+  - requires
+  - enhances
+  - execute
+  - post_execution_routes
+  - verify
+
+identity_rules:
+  official_namespace_prefix: "edu:"
+  local_namespace_prefix: "local:"
+  local_may_reuse_official_basename_id: false
+  local_may_declare_official_namespace: false
+
+local_modes:
+  extend:
+    behavior: add_candidate
+    implicit_official_override: false
+  override:
+    behavior: replace_exact_official_target
+    target_required: true
+    target_namespace: edu
+    duplicate_target_action: stop
+  disable:
+    representation: policy
+    target_namespace: edu
+
+relation_rules:
+  official_to_official: allowed
+  local_to_official: allowed
+  local_to_local: allowed
+  official_to_local: forbidden
+  typed_relations: [requires, enhances, routes, conflicts, replaces, supports]
+
+conflict_rules:
+  local_official_id_collision: LOCAL_SKILL_ID_COLLISION
+  local_namespace_impersonation: LOCAL_SKILL_ID_COLLISION
+  missing_override_target: LOCAL_OVERRIDE_TARGET_NOT_FOUND
+  duplicate_override_target: LOCAL_OVERRIDE_CONFLICT
+  implicit_primary_capability_collision: REGISTRY_CAPABILITY_CONFLICT
+  official_depends_on_local: OFFICIAL_DEPENDS_ON_LOCAL
+  requires_cycle: REGISTRY_GRAPH_INVALID
+  snapshot_mismatch: SOURCE_CONFLICT
+
+human_gate_rule:
+  precedence: project
+  local_override_may_reduce_project_gate: false
+
+snapshot_rule:
+  same_execution_requires_same_ref: true
+  registry_and_official_skill_ref_must_match: true
+  upstream_drift_mid_execution_action: keep_pinned_snapshot
+
+effective_view:
+  persistence: ephemeral
+  persistent_ssot: false
+  provenance_required: [namespace_id, scope, source_registry, source_identity]
+
+failure_behavior:
+  ambiguity: stop
+  unknown: stop_when_resolution_safety_requires
+  missing_target: stop
+  invalid_graph: stop
+
+fixture_source: 00_ADMIN/REGISTRY_V3_RESOLVER_FIXTURES.yaml
+fixture_execution_required_before_promotion: true

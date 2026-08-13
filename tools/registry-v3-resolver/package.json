@@ -1,0 +1,12 @@
+{
+  "name": "eduharness-registry-v3-resolver",
+  "version": "0.1.0-candidate",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1"
+  }
+}

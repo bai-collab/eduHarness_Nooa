@@ -1,0 +1,28 @@
+name: Registry v3 Resolver Candidate
+
+on:
+  push:
+    branches:
+      - candidate/registry-v3-dual-layer
+  pull_request:
+    paths:
+      - '00_ADMIN/00_EDU_SKILL_REGISTRY.yaml'
+      - '00_ADMIN/LOCAL_REGISTRY_TEMPLATE.yaml'
+      - '00_ADMIN/REGISTRY_V3_RESOLVER_FIXTURES.yaml'
+      - '00_ADMIN/REGISTRY_V3_RUNTIME_RESOLVER.yaml'
+      - '00_PROJECT_INSTRUCTIONS.yaml'
+      - 'tools/registry-v3-resolver/**'
+
+jobs:
+  resolver-fixtures:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/registry-v3-resolver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npm test

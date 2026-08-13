@@ -55,20 +55,64 @@ description: >
    - 建立/解析 ENV record、Registry、Brain Index、Artifact Index 所需 control-plane resources。
 6. `provision_storage`
    - 建立/解析 `artifacts`、`output`、`work_area` logical storage roles。
-7. `install_managed_artifacts`
-   - 將 Distribution-managed Skills / Knowledge 寫入 Storage Provider；取得 stable identity / revision（provider 支援時）。
-8. `build_artifact_index`
-   - 建立 logical `artifact://` → provider identity mappings；stable identity 優先於 path。
-9. `build_brain_registry_bindings`
+7. `artifact_transfer_preflight`
+   - 讀 `docs/STORAGE_ADAPTER_CONTRACT.md`，檢查 source + destination adapters 是否具有 deterministic、可驗證的 canonical artifact transfer path。
+   - 必須取得 canonical source identity 與 content evidence。
+   - 只有 source text read + destination text create 不等於可用的 `artifact_transfer`。
+   - 若只能靠模型重新輸出/重建 canonical source 才能寫入，且無法證明 destination canonical equivalence，停止並回報 `RUNTIME_INCOMPATIBLE`。
+8. `install_managed_artifacts`
+   - 將 Distribution-managed Skills / Knowledge 經已通過 preflight 的 transfer path 寫入 Storage Provider。
+   - 每個 artifact 寫入後 read-back destination content/metadata、stable identity / revision（provider 支援時）。
+   - 比對 canonical source 與 destination content evidence；equivalence 未 PASS → `SAVE_UNVERIFIED`。
+9. `build_artifact_index`
+   - 只有 canonical equivalence PASS 的 artifact 才能建立 logical `artifact://` → provider identity mapping 並標記 verified；stable identity 優先於 path。
+10. `build_brain_registry_bindings`
    - Registry Skill resolution 與 Brain logical refs 指向 logical artifacts，不直接綁 provider path。
-10. `generate_env`
-    - 依 provider-neutral ENV template 建立正式 ENV，只保存 installation config/locator。
-11. `create_bootstrap_descriptor`
-    - Descriptor 定位正式 ENV 與 control-plane entry；不得把 Descriptor locator寫回 Kernel。
-12. `fresh_start_verify`
-    - 從 Descriptor 重新開始：Descriptor → ENV → Registry/Brain/Artifact Index → logical artifact → Storage Provider → stable identity/revision read-back。
-13. `finish`
-    - 全部 PASS 才回報 `INSTALLATION_READY`。
+11. `generate_env`
+   - 依 provider-neutral ENV template 建立正式 ENV，只保存 installation config/locator。
+12. `create_bootstrap_descriptor`
+   - Descriptor 定位正式 ENV 與 control-plane entry；不得把 Descriptor locator寫回 Kernel。
+13. `fresh_start_verify`
+   - 從 Descriptor 重新開始：Descriptor → ENV → Registry/Brain/Artifact Index → logical artifact → Storage Provider → stable identity/revision + canonical-equivalence read-back。
+14. `finish`
+   - 全部 PASS 才回報 `INSTALLATION_READY`。
+
+## Canonical Artifact Transfer Contract
+
+Distribution-managed artifacts 必須遵守：
+
+```text
+canonical source
+  → immutable source identity
+  → source content evidence
+  → transfer capability preflight
+  → deterministic transfer
+  → destination read-back
+  → canonical equivalence verification
+  → verified Artifact Index binding
+```
+
+### Source evidence
+- GitHub source 優先使用 blob SHA / commit-pinned identity。
+- cryptographic digest 可直接取得或可可靠重算時，優先用 digest。
+- source byte length 可作輔助 evidence，但不得單獨取代 digest/equivalence proof。
+
+### Transfer rules
+- 優先 byte-preserving connector-file、binary-safe upload、provider-native copy 等不經模型重建內容的 transfer。
+- 模型不得把自己當 transport adapter；不得因 artifact 是 Markdown / YAML / 純文字，就重新生成內容後直接當 canonical copy。
+- write API 回成功只代表 destination mutation 成功，不代表 canonical artifact 安裝成功。
+
+### Verification rules
+- destination 必須重新 read-back；不能只依 write response。
+- equivalence 應比較 source/destination cryptographic digest；若 runtime 只能讀 normalized text，必須有明確 deterministic canonicalization，再於兩端重算同一 digest。
+- 「目視相同」、「字數接近」、「size 相同」不能單獨作為 verified equivalence。
+- equivalence PASS 前，不得建立 `binding_status: verified`。
+
+### Failure boundary
+- canonical source identity/content evidence 不可得 → `SOURCE_UNAVAILABLE`。
+- deterministic verified transfer path 不存在 → `RUNTIME_INCOMPATIBLE`（detail 可用 `ARTIFACT_TRANSFER_UNAVAILABLE`）。
+- destination write failure → `SAVE_FAILED`。
+- destination read-back 與 canonical source 不等價，或無法證明等價 → `SAVE_UNVERIFIED`。
 
 ## Artifact Resolution Contract
 ```text
@@ -81,6 +125,7 @@ Registry / Brain Index
 
 - 有 stable identity 時，不得以 path 作 authoritative identity。
 - provider 提供 revision 時，安裝/升級 verification 必須 read-back revision。
+- verified binding 還必須有 canonical artifact equivalence evidence；stable ID/revision 本身不能證明內容等價。
 - logical ID 找不到 → `ARTIFACT_UNRESOLVED`。
 - Artifact Index 不可用 → `ARTIFACT_INDEX_UNAVAILABLE`。
 
@@ -97,8 +142,9 @@ Registry / Brain Index
 4. 讀 Registry / Brain Index / Artifact Index。
 5. 讀 GitHub stable Distribution。
 6. 比對 schema、logical artifacts、provider capabilities 與 mutation scope。
-7. 顯示 preserve set、mutation set、rollback/recovery plan。
-8. 重大 production overwrite / remap / migration 前取得 Human Gate。
+7. 對所有將被更新的 managed artifacts 執行 artifact transfer preflight，確認 canonical-equivalence 可驗證。
+8. 顯示 preserve set、mutation set、rollback/recovery plan。
+9. 重大 production overwrite / remap / migration 前取得 Human Gate。
 
 ### Preserve set
 預設保留：
@@ -127,7 +173,7 @@ Registry / Brain Index
 用於 ENV / Registry / Brain Index / Artifact Index 等 metadata/control records。Notion page/database IDs 屬 installation-specific locator，不得進 Canonical Kernel/Distribution。
 
 ### Default Storage — Dropbox
-用於 artifacts / output / work_area。優先使用 Dropbox stable ID；revision 可作 read-back / recovery evidence。
+用於 artifacts / output / work_area。優先使用 Dropbox stable ID；revision 可作 read-back / recovery evidence，但 canonical artifact installation 還必須通過 source↔destination equivalence verification。
 
 ### Optional / Legacy — Google Drive
 可作 Storage Provider 或 migration source，但：
@@ -161,4 +207,4 @@ Registry / Brain Index
 - `UPGRADE_ROLLBACK_FAILED`
 
 ## Completion Rule
-只有所有 required writes 實際成功、Control Plane 與 Storage identities 可 read-back、Descriptor fresh-start bootstrap 全部通過，才能宣稱 installation 或 upgrade 完成。
+只有所有 required writes 實際成功、每個 Distribution-managed artifact 都通過 canonical-equivalence read-back、Control Plane 與 Storage identities 可 read-back、Descriptor fresh-start bootstrap 全部通過，才能宣稱 installation 或 upgrade 完成。

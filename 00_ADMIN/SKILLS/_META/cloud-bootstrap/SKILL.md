@@ -7,8 +7,8 @@ description: >
 
 # eduHarness Cloud Bootstrap
 
-version: 0.3.0-candidate
-status: candidate
+version: 0.3.0
+status: active
 registry_contract: v3-dual-layer
 
 ## 定位
@@ -151,7 +151,7 @@ policies:
 - Local Registry 不複製 Official entries。
 - Teacher Custom Skill 日後由 `cloud-skill-builder` 寫 Local Skill package + Artifact Index + Local Registry。
 
-## Upgrade v2 -> v3 Candidate Contract
+## Upgrade v2 -> v3 Contract
 ### Preflight
 1. 讀現有 Bootstrap Descriptor。
 2. 讀現有 ENV、Registry v2、Brain Index、Artifact Index。
@@ -192,7 +192,7 @@ policies:
 任何 verification failure：
 - 不刪 v2 resources；
 - 恢復 v2 ENV/Registry authority；
-- 只撤銷本次 v3 candidate mutation；
+- 只撤銷本次 v3 mutation；
 - 再做 v2 fresh-start verification。
 
 ## Provider Boundaries

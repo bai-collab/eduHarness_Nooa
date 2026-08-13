@@ -18,9 +18,9 @@ candidate_dependencies:
   official_registry_v3:
     source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
     required_schema: 3
-    current_candidate_state: "pending"
-    blocking: true
-    rule: "Phase 3 bootstrap MUST NOT declare executable/ready until the pinned Official Registry file itself validates as schema 3."
+    current_candidate_state: "satisfied"
+    blocking: false
+    evidence: "Official Registry candidate declares schema_version=3, registry_kind=eduharness-official-registry, authority=canonical_distribution, mutability=read_only and 17 Official Skills resolved from distribution paths."
   project_kernel_registry_v3_support:
     required: true
     current_candidate_state: "pending"
@@ -185,7 +185,7 @@ verification:
     - "failure_contract_preserved"
     - "google_drive_not_required_for_installation"
     - "no_installation_specific_locator_in_canonical_kernel_or_distribution"
-  ready_state: "BLOCKED_PENDING_OFFICIAL_REGISTRY_V3_AND_KERNEL_SUPPORT"
+  ready_state: "BLOCKED_PENDING_KERNEL_SCHEMA_3_SUPPORT"
 
 failure:
   descriptor_not_found: "EDUHARNESS_DESCRIPTOR_NOT_FOUND"

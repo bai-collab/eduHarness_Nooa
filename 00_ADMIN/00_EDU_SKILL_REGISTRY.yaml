@@ -1,30 +1,60 @@
-schema_version: 2
-registry: "eduHarness Cloud Skill Registry"
+schema_version: 3
+registry_kind: "eduharness-official-registry"
+registry: "eduHarness Official Skill Registry"
 namespace: "edu"
 edition: "cloud"
-status: "active"
-runtime_ssot: true
-distribution_revision: "2026-08-12-v0.2"
+status: "candidate"
+authority: "canonical_distribution"
+mutability: "read_only"
+runtime_ssot: false
+distribution_revision: "2026-08-13-registry-v3-candidate"
 
 runtime_targets: [chatgpt_web, gemini_spark]
+
+authority_contract:
+  official_registry: "GitHub Canonical Distribution pinned to one immutable commit snapshot per execution"
+  local_registry: "installation-owned overlay resolved from formal ENV.control_plane.local_registry"
+  effective_routing_view: "runtime ephemeral; never a persistent third Registry"
+  precedence: "Project governance > Local explicit policy > Official Registry > Skill self-routing"
+  project_governance_override_allowed: false
 
 environment_contract:
   installation_entry: "Bootstrap Descriptor"
   env_template: "00_EDUHARNESS_ENV_TEMPLATE.yaml"
-  rule: "Registry 不保存 installation-specific provider locator；runtime 由 Bootstrap Descriptor 定位正式 ENV，再由 ENV.control_plane.registry 找到 production Registry。"
+  local_registry_locator_field: "ENV.control_plane.local_registry"
+  rule: "Official Registry 不保存 installation-specific provider locator；Descriptor→ENV 只解析 installation-owned Local Registry/Brain Index/Artifact Index/Storage。Official Registry 由 Project upstream pin 到 immutable Distribution snapshot 後讀取。"
 
 source_contract:
-  cloud_runtime_ssot: "installation Control Plane resolved from Bootstrap Descriptor + ENV"
-  canonical_distribution_repository: "https://github.com/bai-collab/eduHarness_Nooa.git"
-  upstream_branch: "main"
+  official_source: "project_upstream"
+  snapshot_required: true
+  snapshot_identity: "immutable_commit_sha"
+  snapshot_scope: "Official Registry + Official Skills + Official Knowledge used in the same execution"
   canonical_skill_root: "00_ADMIN/SKILLS"
-  artifact_resolution: "Registry Skill target SHOULD resolve through logical artifact:// ID → Artifact Index → storage provider stable identity."
+  official_artifact_resolution: "pinned distribution snapshot + canonical path"
+  installation_artifact_index_for_official_required: false
+  local_artifact_resolution: "Local Registry logical artifact:// ID → installation Artifact Index → provider stable identity/revision"
+
+local_overlay_contract:
+  supported: true
+  local_registry_schema: 1
+  overlay_contract_version: 1
+  namespace: "local"
+  implicit_override_allowed: false
+  official_id_reuse_allowed: false
+  official_namespace_impersonation_allowed: false
+  official_to_local_authored_relation_allowed: false
+  local_to_official_relation_allowed: true
+  local_to_local_relation_allowed: true
+  conflict_action: stop
+  contract_ref: "docs/LOCAL_REGISTRY_CONTRACT.md"
+  dual_layer_contract_ref: "docs/REGISTRY_V3_DUAL_LAYER_CONTRACT.md"
+  resolver_fixtures_ref: "00_ADMIN/REGISTRY_V3_RESOLVER_FIXTURES.yaml"
 
 routing_policy:
   unknown_skill_action: stop
   preload_all_skills: false
   read_skill_full_text_before_execute: true
-  relation_source: registry-only
+  relation_source: registry-layered
   namespace_required: true
   typed_relations_required: true
   routing_guard_contract_version: "2.1"
@@ -41,6 +71,7 @@ routing_policy:
   per_route_on_unknown_enabled: false
   confidence_score_enabled: false
   state_builder_ref: "00_ADMIN/REGISTRY_V2_1_RUNTIME_STATE_BUILDER.yaml"
+  effective_order: [selection, entry_routes, primary_confirmation, requires, enhances, execute, post_execution_routes, verify]
 
 observability_policy:
   audit_trace_contract_ref: "00_ADMIN/REGISTRY_V2_1_RUNTIME_AUDIT_TRACE_CONTRACT.yaml"
@@ -48,6 +79,7 @@ observability_policy:
   trace_assembly_owner: runtime_orchestrator
   trace_default_persistence: ephemeral
   trace_persist_destination: "ENV.storage.work_area"
+  provenance_required: [namespace_id, scope, source_registry, source_identity]
   private_chain_of_thought_storage: prohibited
   student_pii_storage: prohibited
 
@@ -74,6 +106,11 @@ graph_policy:
   conflicts: {simultaneous_activation: forbidden}
   supports: {auto_load: false}
   replaces: {replacement_cycle_allowed: false}
+  cross_layer:
+    official_to_official: allowed
+    local_to_official: allowed
+    local_to_local: allowed
+    official_to_local: forbidden
 
 reasoning_policy:
   mode: conditional
@@ -89,35 +126,31 @@ reasoning_policy:
   integration_rule: "entry route 收斂後確認 Primary；reasoning-kernel 只能作 supporting capability，不得覆蓋 Primary Skill 的 domain/output/Human Gate/stopping contract。"
   output_rule: "只保留可稽核 evidence/hypothesis/check/result/conclusion；不得保存或輸出 private chain-of-thought。"
 
-skill_port_policy:
-  meta_skill: github-to-cloud-skill-port
-  port_mode: functional-adaptation
-  blind_mirror_allowed: false
-  auto_batch_sync_allowed: false
-  auto_overwrite_allowed: false
-  update_registry_after_success: true
-  update_brain_index_for_skill_only: false
-  portability_verification_required: true
-  installation_specific_locator_allowed_in_canonical_registry: false
-  skill_package_unit: folder
-  preserve_required_subresources: true
+skill_lifecycle_policy:
+  official_skill_change: "Canonical Distribution change; requires routing/portability validation and promotion gate."
+  local_skill_creation: "Owned by Local Registry + installation Artifact Index; does not modify this Official Registry."
+  legacy_github_to_cloud_port:
+    status: legacy_migration_support
+    fresh_install_official_mirror_required: false
+    blind_mirror_allowed: false
+    model_regeneration_as_transport_allowed: false
 
 skills:
   - id: cloud-bootstrap
     namespace_id: "edu:cloud-bootstrap"
     canonical_name: "eduHarness Cloud 初始化"
-    file: "00_ADMIN/SKILLS/_META/cloud-bootstrap/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/_META/cloud-bootstrap/SKILL.md"}
     metadata: {type: meta, role: primary-capability}
     selection:
       triggers: ["初始化 eduHarness Cloud", "安裝 eduHarness Cloud", "安裝 eduHarness_Nooa", "從 Distribution 安裝 eduHarness", "建立 eduHarness Cloud 架構", "建立 Bootstrap Descriptor", "搬移 eduHarness Cloud", "修復 eduHarness Cloud bootstrap", "升級 eduHarness Cloud"]
       excludes: ["一般教案撰寫", "一般命題", "一般教材製作", "一般文獻查詢"]
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
-    constraints: {human_gate_if: ["覆寫既有 Descriptor 或 ENV", "覆寫既有 Registry/Brain Index/Artifact Index", "批次搬移或刪除資料", "production upgrade"]}
+    constraints: {human_gate_if: ["覆寫既有 Descriptor 或 ENV", "覆寫既有 Local Registry/Brain Index/Artifact Index", "批次搬移或刪除資料", "production upgrade"]}
 
   - id: github-to-cloud-skill-port
     namespace_id: "edu:github-to-cloud-skill-port"
     canonical_name: "GitHub → Cloud Skill 移植"
-    file: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/_META/github-to-cloud-skill-port/SKILL.md"}
     metadata: {type: meta, role: primary-capability}
     selection:
       triggers: ["同步 GitHub skill", "移植 eduHarness skill", "更新 Cloud skill", "檢查 GitHub skill 是否有新版"]
@@ -128,13 +161,13 @@ skills:
   - id: cloud-skill-builder
     namespace_id: "edu:cloud-skill-builder"
     canonical_name: "eduHarness Cloud Skill Builder"
-    file: "00_ADMIN/SKILLS/_META/cloud-skill-builder/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/_META/cloud-skill-builder/SKILL.md"}
     metadata: {type: meta, role: primary-capability}
     selection:
       triggers: ["新增 eduHarness Cloud Skill", "建立 Cloud Skill", "修改 Cloud Skill", "擴充 Cloud Skill", "設計 Skill package", "Skill create vs extend", "Skill routing impact analysis"]
       excludes: ["同步 GitHub skill", "安裝 eduHarness Cloud", "升級 eduHarness Cloud", "一般教案撰寫", "一般命題", "一般教材製作", "一般文獻查詢"]
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: ["edu:github-to-cloud-skill-port", "edu:cloud-bootstrap"]}
-    constraints: {human_gate_if: ["新增或修改 production Registry entry", "新增或修改 KeyPoint catalog", "新增或修改 production route", "重大覆寫既有 Skill procedure", "刪除或重新命名 production Skill", "批次同步多個 Skill", "發布 GitHub Canonical Distribution main", "任何可能破壞 routing 的治理修改"]}
+    constraints: {human_gate_if: ["新增或修改 Official Registry entry", "新增或修改 KeyPoint catalog", "新增或修改 Official route", "重大覆寫既有 Official Skill procedure", "刪除或重新命名 Official Skill", "發布 GitHub Canonical Distribution main", "任何可能破壞 routing 的治理修改"]}
     runtime: {chatgpt_web: "supported", gemini_spark: "supported"}
     source: {kind: "local-design", provenance: "CLOUD_SKILL_BUILDER_DEVELOPMENT_PLAN.md Draft 0.1 + validated Cloud production", upstream_version: "0.1.0"}
     cloud: {port_mode: "native-cloud", sync_status: "canonical"}
@@ -142,7 +175,7 @@ skills:
   - id: lesson-plan-authoring
     namespace_id: "edu:lesson-plan-authoring"
     canonical_name: "教案撰寫"
-    file: "00_ADMIN/SKILLS/lesson-plan-authoring/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/lesson-plan-authoring/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["教案撰寫", "lesson plan", "教學活動設計", "教案草稿"], excludes: ["既有教案差異化", "試題命題", "教材轉闖關遊戲"]}
     relations:
@@ -160,7 +193,7 @@ skills:
   - id: lesson-differentiation
     namespace_id: "edu:lesson-differentiation"
     canonical_name: "教案差異化教學"
-    file: "00_ADMIN/SKILLS/lesson-differentiation/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/lesson-differentiation/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["教案差異化", "教案差異化教學", "分層教學", "lesson differentiation"], excludes: []}
     relations:
@@ -176,7 +209,7 @@ skills:
   - id: digital-learning-lesson-plan
     namespace_id: "edu:digital-learning-lesson-plan"
     canonical_name: "數位學習精進教案"
-    file: "00_ADMIN/SKILLS/digital-learning-lesson-plan/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/digital-learning-lesson-plan/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["數位學習精進教案", "數位精進計畫教案", "數位學習計畫", "數位教學方案"], excludes: []}
     relations:
@@ -192,7 +225,7 @@ skills:
   - id: item-authoring
     namespace_id: "edu:item-authoring"
     canonical_name: "試題命題"
-    file: "00_ADMIN/SKILLS/item-authoring/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/item-authoring/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["試題命題", "命題", "item authoring", "題庫"], excludes: ["一般教案", "教材轉遊戲", "教案差異化"]}
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
@@ -201,7 +234,7 @@ skills:
   - id: material-to-quest-game
     namespace_id: "edu:material-to-quest-game"
     canonical_name: "教材轉闖關遊戲"
-    file: "00_ADMIN/SKILLS/material-to-quest-game/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/material-to-quest-game/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["教材轉闖關遊戲", "教材做成闖關", "Web 學習遊戲", "實體教具遊戲"], excludes: []}
     relations:
@@ -217,7 +250,7 @@ skills:
   - id: visual-art-storyboard
     namespace_id: "edu:visual-art-storyboard"
     canonical_name: "美工與分鏡設計"
-    file: "00_ADMIN/SKILLS/visual-art-storyboard/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/visual-art-storyboard/SKILL.md"}
     metadata:
       type: workflow
       role: primary-capability
@@ -234,7 +267,7 @@ skills:
   - id: image-to-3d-scene
     namespace_id: "edu:image-to-3d-scene"
     canonical_name: "圖片轉3D"
-    file: "00_ADMIN/SKILLS/image-to-3d-scene/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/image-to-3d-scene/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["圖片轉3D", "3D 展示頁", "可環繞場景", "Three.js 場景"], excludes: []}
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
@@ -243,7 +276,7 @@ skills:
   - id: pixel-ai-secretary
     namespace_id: "edu:pixel-ai-secretary"
     canonical_name: "Pixel AI 美術提示詞祕書"
-    file: "00_ADMIN/SKILLS/pixel-ai-secretary/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/pixel-ai-secretary/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["Pixel AI 美術提示詞祕書", "Pixel AI secretary", "固定角色 pixel art prompt"], excludes: []}
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
@@ -252,7 +285,7 @@ skills:
   - id: audience-outcome-lens
     namespace_id: "edu:audience-outcome-lens"
     canonical_name: "受眾成果校準"
-    file: "00_ADMIN/SKILLS/audience-outcome-lens/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/audience-outcome-lens/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["受眾成果校準", "Audience Outcome Lens", "audience-outcome-lens"], excludes: ["精確轉換", "純計算", "客觀技術查核"]}
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
@@ -261,7 +294,7 @@ skills:
   - id: conjecturing-five-stage
     namespace_id: "edu:conjecturing-five-stage"
     canonical_name: "臆測五階段"
-    file: "00_ADMIN/SKILLS/conjecturing-five-stage/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/conjecturing-five-stage/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["臆測五階段", "臆測教學", "臆測任務", "conjecturing teaching"], excludes: ["一般教案撰寫", "既有教案分層", "命題", "教材轉遊戲", "讀取既有臆測教案後引導學生"]}
     relations:
@@ -281,7 +314,7 @@ skills:
   - id: quest-threejs-adoption
     namespace_id: "edu:quest-threejs-adoption"
     canonical_name: "闖關遊戲 Three.js 導入"
-    file: "00_ADMIN/SKILLS/quest-threejs-adoption/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/quest-threejs-adoption/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["闖關遊戲 Three.js 導入", "教師 3D 闖關", "3D 教學物件 Pilot", "quest-threejs-adoption"], excludes: []}
     relations:
@@ -298,7 +331,7 @@ skills:
   - id: educational-web-game-workflow
     namespace_id: "edu:educational-web-game-workflow"
     canonical_name: "教育 Web 教學遊戲工作流"
-    file: "00_ADMIN/SKILLS/educational-web-game-workflow/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/educational-web-game-workflow/SKILL.md"}
     metadata: {type: workflow, role: primary-capability}
     selection: {triggers: ["教育 Web 教學遊戲工作流", "教育 Web 遊戲", "教育教學遊戲", "educational-web-game-workflow"], excludes: ["只有教材轉遊戲規格", "已有遊戲只加 Three.js", "單張圖片轉 3D 展示頁", "只有分鏡"]}
     relations:
@@ -317,7 +350,7 @@ skills:
   - id: reasoning-kernel
     namespace_id: "edu:reasoning-kernel"
     canonical_name: "證據式推理核心"
-    file: "00_ADMIN/SKILLS/reasoning-kernel/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/reasoning-kernel/SKILL.md"}
     metadata: {type: workflow, role: supporting-kernel}
     selection: {triggers: ["推理分析", "假設驗證", "診斷推理", "reasoning kernel", "reasoning-kernel"], excludes: ["單純翻譯", "格式轉換", "機械式抄錄", "單一來源的簡單事實查詢"]}
     relations: {requires: [], enhances: [], routes: [], conflicts: [], replaces: [], supports: []}
@@ -326,7 +359,7 @@ skills:
   - id: conjecturing-five-stage-facilitator
     namespace_id: "edu:conjecturing-five-stage-facilitator"
     canonical_name: "臆測五階段學習引導"
-    file: "00_ADMIN/SKILLS/conjecturing-five-stage-facilitator/SKILL.md"
+    artifact: {source: distribution, path: "00_ADMIN/SKILLS/conjecturing-five-stage-facilitator/SKILL.md"}
     metadata: {type: workflow, role: one-to-one-student-facilitation}
     selection: {triggers: ["臆測五階段學習引導", "一對一臆測學習", "一生一 AI 臆測", "引導學生臆測五階段", "讀教案帶學生臆測", "conjecturing facilitator", "conjecturing-five-stage-facilitator"], excludes: ["產出臆測教案", "把教材改成臆測教案", "一般教案撰寫", "教材轉遊戲", "多組同步", "全班協調", "跨裝置小組彙整"]}
     relations:
@@ -340,16 +373,26 @@ skills:
       supports: []
     constraints: {human_gate_if: ["學生個資或可識別學習紀錄", "錄音錄影", "正式評量或成績", "研究編碼、IRB 或正式送件"]}
 
-installed_cloud_skills:
+official_skills:
   count: 17
   meta_count: 3
   workflow_count: 14
+  artifact_source: "pinned_distribution_snapshot"
+  installation_mirror_required: false
 
 validation_expectations:
+  schema_version: 3
+  registry_kind: "eduharness-official-registry"
+  authority: "canonical_distribution"
+  mutability: "read_only"
   unique_namespace: true
+  all_artifacts_distribution_scoped: true
   all_relation_targets_exist: true
   requires_acyclic: true
   replacement_acyclic: true
   hard_relation_conflicts_absent: true
   route_evaluation_values_valid: true
   route_cycles_allowed_with_loop_protection: true
+  official_to_local_authored_relations_absent: true
+  local_overlay_contract_supported: true
+  effective_routing_view_ephemeral: true

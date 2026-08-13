@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import type { StorageAdapter } from "./storage.js";
 
 export type CanonicalArtifact = {
   repository: string;
@@ -11,12 +10,26 @@ export type CanonicalArtifact = {
   sha256: string;
 };
 
+export type ArtifactBytes = {
+  path: string;
+  bytes: Uint8Array;
+  providerIdentity?: string;
+  revision?: string;
+};
+
+export interface ArtifactStorageAdapter {
+  writeBytes(workspaceId: string, path: string, bytes: Uint8Array): Promise<ArtifactBytes>;
+  readBytes(workspaceId: string, path: string): Promise<ArtifactBytes | null>;
+}
+
 export type TransferEvidence = {
   destinationPath: string;
   sourceIdentity: string;
   sourceSha256: string;
   destinationSha256: string;
   byteLength: number;
+  providerIdentity?: string;
+  revision?: string;
   verified: true;
 };
 
@@ -75,7 +88,7 @@ export async function fetchGitHubArtifact(
 }
 
 export async function transferCanonicalArtifact(
-  storage: StorageAdapter,
+  storage: ArtifactStorageAdapter,
   input: {
     workspaceId: string;
     destinationPath: string;
@@ -102,6 +115,8 @@ export async function transferCanonicalArtifact(
     sourceSha256: input.artifact.sha256,
     destinationSha256,
     byteLength: readBack.bytes.byteLength,
+    providerIdentity: readBack.providerIdentity,
+    revision: readBack.revision,
     verified: true,
   };
 }

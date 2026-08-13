@@ -33,6 +33,12 @@ candidate_dependencies:
     current_candidate_state: "satisfied"
     blocking: false
     evidence: "GitHub Actions Registry v3 Resolver Candidate run 31672762432 completed success; resolver fixtures 16/16 PASS."
+  cleanroom_acceptance:
+    required: true
+    current_candidate_state: "satisfied"
+    blocking: false
+    evidence: "Registry v3 isolated Notion + Dropbox + GitHub clean-room acceptance passed, including Local extend, explicit override, Human Gate preservation, and full fresh-start repeatability."
+    report: "docs/REGISTRY_V3_CLEANROOM_ACCEPTANCE.md"
 
 compatibility:
   project_kernel_version_required: "eduHarness Cloud v2.1.0 Candidate or later schema-3-capable Kernel"
@@ -188,6 +194,8 @@ verification:
     - "local_registry_contract_readable"
     - "runtime_resolver_contract_readable"
     - "resolver_fixtures_16_of_16_pass"
+    - "cleanroom_acceptance_pass"
+    - "cleanroom_full_fresh_start_repeatable"
     - "env_schema_3_provider_neutral"
     - "official_registry_source_schema_3"
     - "official_registry_remote_snapshot_model"
@@ -198,7 +206,7 @@ verification:
     - "artifact_index_scoped_to_installation_owned_artifacts"
     - "human_gate_preserved"
     - "failure_contract_preserved"
-  ready_state: "REGISTRY_V3_CANDIDATE_READY_FOR_CLEANROOM_ACCEPTANCE"
+  ready_state: "REGISTRY_V3_CANDIDATE_READY_FOR_PROMOTION_GATE"
 
 failure:
   descriptor_not_found: "EDUHARNESS_DESCRIPTOR_NOT_FOUND"

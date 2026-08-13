@@ -91,7 +91,8 @@ No implicit override exists.
 - Official namespace IDs MUST use `edu:`.
 - Local namespace IDs MUST use `local:`.
 - Local entries MUST NOT declare an `edu:` identity.
-- Local ID collision with an Official logical ID is invalid even when override is intended.
+- Local `id` basename MUST NOT equal any Official `id`; override uses a distinct Local `id` as well as a distinct `namespace_id`.
+- Any Local identity collision or impersonation of an Official identity is invalid even when override is intended.
 - An override MUST use a distinct Local identity and an explicit Official target.
 
 ## Cross-layer relation rules
@@ -103,7 +104,7 @@ No implicit override exists.
 | Local | Local | yes |
 | Official | Local | no |
 
-Official portability forbids authored Official relations that require installation-local nodes.
+Official portability forbids authored Official relations that require installation-local nodes. Because Official -> Local edges are invalid before Effective View graph construction, a valid cross-layer dependency cycle cannot be formed by authored relations; attempts are blocked as `OFFICIAL_DEPENDS_ON_LOCAL`.
 
 ## Capability collision rules
 A Local `extend` candidate that claims the same Primary capability/responsibility as an Official candidate MUST NOT silently win by precedence. It is a conflict unless the Local entry is converted to an explicit `override` or narrowed so no Primary collision remains.
@@ -139,7 +140,7 @@ overrides:
 
 Rules:
 - target must exist in the pinned Official Registry;
-- Local identity must differ from target identity;
+- Local `id` and `namespace_id` must both differ from the Official target identity;
 - only the targeted Official Skill is removed/replaced;
 - Project governance and Human Gate remain in force;
 - missing target fails closed as `LOCAL_OVERRIDE_TARGET_NOT_FOUND`;

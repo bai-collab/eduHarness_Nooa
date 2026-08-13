@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 env_kind: "eduHarness-cloud"
 status: "template"
 
@@ -10,7 +10,7 @@ installation:
 control_plane:
   provider: "<CONTROL_PLANE_PROVIDER>"
   root: "<CONTROL_PLANE_ROOT_LOCATOR>"
-  registry: "<REGISTRY_LOCATOR>"
+  local_registry: "<LOCAL_REGISTRY_LOCATOR>"
   brain_index: "<BRAIN_INDEX_LOCATOR>"
   artifact_index: "<ARTIFACT_INDEX_LOCATOR>"
 
@@ -24,6 +24,13 @@ storage:
 runtime:
   state_persistence: "ephemeral"
   primary_targets: [chatgpt_web, gemini_spark]
+  effective_routing_view_persistence: "ephemeral"
+
+official_distribution:
+  source: "project_upstream"
+  registry_path: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+  snapshot_policy: "resolve_branch_to_immutable_commit_per_execution"
+  installation_mirror_required: false
 
 external_libraries: {}
 
@@ -35,14 +42,17 @@ provider_profiles:
 
 setup_instructions:
   - "此模板不是 runtime ENV；正式 installation 必須建立自己的正式 ENV。"
-  - "Bootstrap Descriptor 是 installation entry；Descriptor 定位正式 ENV，ENV 再定位 Control Plane 與 Storage resources。"
+  - "Bootstrap Descriptor 是 installation entry；Descriptor 定位正式 ENV，ENV 再定位 installation-owned Control Plane 與 Storage resources。"
+  - "Official Registry/Official Skills 不使用 installation locator；由 Project upstream 解析 GitHub Canonical Distribution，並在每次 execution pin 到 immutable commit snapshot。"
+  - "Local Registry 是 installation-owned routing overlay；其 locator 只存在正式 ENV。"
   - "Default profile 為 Notion Control Plane + Dropbox Storage；這是預設 implementation，不是 Kernel 寫死的唯一 provider。"
   - "Google Drive 可作 optional/legacy storage provider；首次安裝不得要求使用者先提供 Google Drive root。"
   - "不得把其他 installation 的 Notion page/database ID、Dropbox stable ID、Drive URL/ID 或其他 provider locator 複製到自己的正式 ENV。"
-  - "不要修改 Project Kernel、Registry、Brain Index、Artifact Index 或 Skill 來填 installation-specific locator。"
 
 rules:
   - "正式 ENV 只保存 installation config/locator，不保存 secrets、tokens、cookies、credentials、private keys 或學生個資。"
-  - "Registry / Brain Index / Artifact Index 使用 logical reference 與 provider-neutral contract；provider-specific identity 只出現在 installation/control-plane records。"
-  - "Runtime State 預設 ephemeral；working state 不因 ENV 存在而自動持久化。"
+  - "Local Registry / Brain Index / Artifact Index 使用 logical reference 與 provider-neutral contract；provider-specific identity 只出現在 installation/control-plane records。"
+  - "Official Registry 與 Official Skill identity 由 pinned Distribution snapshot 提供，不複製成 installation SSOT。"
+  - "Artifact Index 對 installation-owned artifacts authoritative；Official Distribution artifacts 不要求 installation Artifact Index mirror。"
+  - "Runtime State 與 Effective Routing View 預設 ephemeral，不因 ENV 存在而自動持久化。"
   - "Provider capability 以當次 runtime tools / Connected Apps / ACL 為準。"

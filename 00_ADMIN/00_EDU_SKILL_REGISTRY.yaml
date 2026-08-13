@@ -3,11 +3,11 @@ registry_kind: "eduharness-official-registry"
 registry: "eduHarness Official Skill Registry"
 namespace: "edu"
 edition: "cloud"
-status: "candidate"
+status: "active"
 authority: "canonical_distribution"
 mutability: "read_only"
 runtime_ssot: false
-distribution_revision: "2026-08-13-registry-v3-candidate"
+distribution_revision: "2026-08-13-registry-v3"
 
 runtime_targets: [chatgpt_web, gemini_spark]
 

@@ -2,184 +2,213 @@
 name: cloud-bootstrap
 description: >
   eduHarness Cloud installation lifecycle meta Skill。支援首次安裝、Distribution 安裝、升級、搬移與修復；
-  以 GitHub Canonical Distribution 為散布來源，以 Bootstrap Descriptor 為 installation entry。
+  Registry v3 採 Official GitHub snapshot + installation Local Registry 雙層 routing。
 ---
 
 # eduHarness Cloud Bootstrap
+
+version: 0.3.0-candidate
+status: candidate
+registry_contract: v3-dual-layer
 
 ## 定位
 `cloud-bootstrap` 負責 installation lifecycle，不處理一般教案、命題、教材或研究任務。
 
 支援五種模式：
-1. `fresh_install`：建立新的 Descriptor-first installation。
-2. `distribution_install`：依官方 GitHub Distribution 建立 control plane / storage / ENV / Descriptor。
-3. `upgrade`：升級既有 installation 的 distribution-managed control-plane records 與 logical artifacts。
-4. `move`：遷移 provider 或 locator，不假設一定是 Drive root 搬移。
-5. `repair`：修復 Descriptor / ENV / Registry / Brain Index / Artifact Index / Storage resolution。
+1. `fresh_install`：建立新的 Descriptor-first v3 installation。
+2. `distribution_install`：依官方 GitHub Distribution 建立 installation Control Plane / Storage / ENV / Descriptor。
+3. `upgrade`：將既有 installation 升級至目標 Distribution/source model。
+4. `move`：遷移 installation provider 或 locator。
+5. `repair`：修復 Descriptor / ENV / Local Registry / Brain Index / Artifact Index / Storage resolution。
+
+## Registry v3 Source Model
+- Project Kernel 仍是最高層 governance。
+- GitHub Canonical Distribution 提供 Official Registry、Official Skills 與 Official Knowledge。
+- 每次 routing/execution 開始前，必須把 Project upstream branch 解析成 immutable commit SHA；Official Registry/Skill/Knowledge 全部使用同一 snapshot。
+- Official Registry 不再是 installation Control Plane resource；installation 不建立 Official Registry 的 authoritative copy。
+- Official Skills 不再要求複製到 installation Storage；runtime 依 pinned snapshot on-demand 讀取完整 Skill package。
+- installation 建立 Local Registry，作為 Teacher Custom Skill 與 explicit local policy overlay。
+- Local Skill 由 Local Registry -> Artifact Index -> installation Storage 解析。
+- Effective Routing View 只存在 runtime，預設 ephemeral，不得持久化成第三份 Registry SSOT。
+- Local policy 不得覆蓋 Project Human Gate、privacy、安全、failure 或其他 Kernel governance。
 
 ## Canonical Distribution Contract
 - Canonical Distribution 固定由 Project Kernel `upstream.repository` / `upstream.branch` 解析。
-- 必須讀取 `00_EDUHARNESS_DISTRIBUTION.yaml`，不得依記憶猜版本或資源。
-- GitHub 是 Canonical Distribution，不是 production runtime SSOT。
+- 必須讀取 `00_EDUHARNESS_DISTRIBUTION.yaml` 與 v3 contracts，不得依記憶猜版本。
+- Distribution snapshot identity 必須是 immutable commit；branch 名稱只能作 discovery hint，不能作 active execution identity。
 - Bootstrap Descriptor 是 installation entry；正式 ENV 是 installation config。
-- Notion 是 default Control Plane；Dropbox 是 default Storage Provider。
-- Google Drive 是 optional/legacy storage provider，不是首次安裝必要條件。
-- Default provider 不代表唯一 provider；實際 provider 由安裝程序與正式 Descriptor/ENV 決定。
-- Distribution locator 不代表寫入權限；所有 mutation 依 authenticated user / connector ACL。
-
-## Project Instructions 穩定性
-一般 Distribution upgrade 不要求重新貼 Project Instructions；只有 Kernel 自身有 breaking bootstrap/governance change 時才需要 Project Instructions migration，並在執行前取得 Human Gate。
+- Notion 是 default Control Plane；Dropbox 是 default Storage Provider；Google Drive 是 optional/legacy。
+- Provider 預設值不是 Kernel-global hard dependency；實際 installation provider 由 Descriptor/ENV 解析。
+- Distribution locator 不代表 mutation 權限；所有寫入依 authenticated user / connector ACL。
 
 ## 新安裝必要輸入
-`distribution_install` 不要求教師先建立 Google Drive root。
-
 必要條件：
 - 使用者明確要求安裝；
-- runtime 至少具有可建立或使用所選 Control Plane / Storage provider 的能力；
-- 若使用 default profile，需能使用 Notion 與 Dropbox。
+- active Kernel 支援目標 ENV/Registry contract；
+- runtime 能讀 GitHub Canonical Distribution 並解析 immutable commit snapshot；
+- runtime 至少能建立或使用所選 installation Control Plane / Storage provider；
+- default profile 需要 Notion + Dropbox 可用。
 
-可選：installation name、owner label、指定 Control Plane、指定 Storage Provider、legacy Google Drive migration source。
+可選：installation name、owner label、指定 Control Plane、指定 Storage Provider、legacy migration source。
 
-若 provider 不可用、ACL 不足或 installation identity 無法唯一解析，停止，不猜 locator。
+若 Distribution snapshot、provider、ACL 或 installation identity 無法唯一解析，停止，不猜 locator。
 
-## 新安裝流程
+## Fresh Install / Distribution Install
 1. `resolve_distribution`
-   - 讀官方 `00_EDUHARNESS_DISTRIBUTION.yaml` 與 required canonical contracts。
-2. `select_provider_profile`
-   - default = Notion Control Plane + Dropbox Storage；若使用者明確指定 supported provider，依 adapter contract 執行。
-3. `plan_installation`
-   - 規劃 Control Plane resources、Storage containers、ENV、Bootstrap Descriptor、Registry/Brain/Artifact mappings。
-4. `human_gate_if_required`
-   - 新空白 installation 的可預期 create 可依已明確安裝請求執行；覆寫既有 production、批次搬移、刪除、治理變更仍需 Human Gate。
-5. `provision_control_plane`
-   - 建立/解析 ENV record、Registry、Brain Index、Artifact Index 所需 control-plane resources。
-6. `provision_storage`
-   - 建立/解析 `artifacts`、`output`、`work_area` logical storage roles。
-7. `artifact_transfer_preflight`
-   - 讀 `docs/STORAGE_ADAPTER_CONTRACT.md`，檢查 source + destination adapters 是否具有 deterministic、可驗證的 canonical artifact transfer path。
-   - 必須取得 canonical source identity 與 content evidence。
-   - 只有 source text read + destination text create 不等於可用的 `artifact_transfer`。
-   - 若只能靠模型重新輸出/重建 canonical source 才能寫入，且無法證明 destination canonical equivalence，停止並回報 `RUNTIME_INCOMPATIBLE`。
-8. `install_managed_artifacts`
-   - 將 Distribution-managed Skills / Knowledge 經已通過 preflight 的 transfer path 寫入 Storage Provider。
-   - 每個 artifact 寫入後 read-back destination content/metadata、stable identity / revision（provider 支援時）。
-   - 比對 canonical source 與 destination content evidence；equivalence 未 PASS → `SAVE_UNVERIFIED`。
-9. `build_artifact_index`
-   - 只有 canonical equivalence PASS 的 artifact 才能建立 logical `artifact://` → provider identity mapping 並標記 verified；stable identity 優先於 path。
-10. `build_brain_registry_bindings`
-   - Registry Skill resolution 與 Brain logical refs 指向 logical artifacts，不直接綁 provider path。
+   - 讀 Project upstream 指向的 `00_EDUHARNESS_DISTRIBUTION.yaml`。
+   - 確認 active Kernel 支援 manifest 宣告的 ENV/Official Registry/Local Registry contract。
+2. `pin_distribution_snapshot`
+   - 將 upstream branch 解析為 immutable commit SHA。
+   - 後續 Official Registry/Skills/Knowledge 全部使用此 SHA。
+   - 若中途來源不一致，停止 `SOURCE_CONFLICT`。
+3. `select_provider_profile`
+   - default = Notion Control Plane + Dropbox Storage；其他 provider 依可用 adapter contract。
+4. `plan_installation`
+   - 規劃 ENV、Local Registry、Brain Index、Artifact Index、Bootstrap Descriptor 與 Storage containers。
+   - Fresh install 不規劃 Official Skill mirror 或 Official Registry installation copy。
+5. `human_gate_if_required`
+   - 新空白 installation 的預期 create 可依明確安裝請求執行；覆寫 production、migration、批次搬移、刪除、治理變更仍需 Gate。
+6. `provision_control_plane`
+   - 建立/解析 Local Registry、Brain Index、Artifact Index 與 ENV 所需 installation resources。
+   - Local Registry 初始內容依 `00_ADMIN/LOCAL_REGISTRY_TEMPLATE.yaml` 建立，預設 `skills: []`。
+7. `provision_storage`
+   - 建立/解析 `artifacts`、`output`、`work_area` logical roles。
+   - `artifacts` 儲存 installation-owned Local Skill/Knowledge，不要求存放 Official Skills。
+8. `validate_official_registry`
+   - 從 pinned snapshot 讀 Official Registry v3。
+   - 驗證 schema、namespace、typed relations、guard contract、graph 基本合法性。
+9. `validate_local_registry`
+   - 讀 installation Local Registry。
+   - 驗證 schema 1 / overlay contract、`local:` namespace、artifact refs、override/disable/extend policy。
+10. `build_effective_routing_view`
+   - 依 `REGISTRY_V3_DUAL_LAYER_CONTRACT.md`：Project governance -> Official + Local validation -> disable -> explicit override -> extend -> conflict detection -> effective graph validation。
+   - Effective View 不持久化。
 11. `generate_env`
-   - 依 provider-neutral ENV template 建立正式 ENV，只保存 installation config/locator。
+   - 使用 ENV schema 3；`control_plane.local_registry` 定位 Local Registry。
+   - ENV 不保存 Official Registry installation locator。
 12. `create_bootstrap_descriptor`
-   - Descriptor 定位正式 ENV 與 control-plane entry；不得把 Descriptor locator寫回 Kernel。
+   - Descriptor 定位正式 ENV 與 installation resources；不得把 installation locator 寫回 Kernel/Distribution。
 13. `fresh_start_verify`
-   - 從 Descriptor 重新開始：Descriptor → ENV → Registry/Brain/Artifact Index → logical artifact → Storage Provider → stable identity/revision + canonical-equivalence read-back。
+   - 從 Descriptor 全新開始：Descriptor -> ENV -> pin Distribution snapshot -> Official Registry -> Local Registry / Brain / Artifact Index -> Effective Routing View -> Official Skill snapshot read -> Local artifact resolution -> Storage roles。
 14. `finish`
    - 全部 PASS 才回報 `INSTALLATION_READY`。
 
-## Canonical Artifact Transfer Contract
-
-Distribution-managed artifacts 必須遵守：
-
+## Official Artifact Resolution
 ```text
-canonical source
-  → immutable source identity
-  → source content evidence
-  → transfer capability preflight
-  → deterministic transfer
-  → destination read-back
-  → canonical equivalence verification
-  → verified Artifact Index binding
+Project upstream
+  -> immutable distribution commit
+  -> Official Registry v3
+  -> Official Skill/Knowledge canonical path
+  -> read full artifact from same snapshot
 ```
 
-### Source evidence
-- GitHub source 優先使用 blob SHA / commit-pinned identity。
-- cryptographic digest 可直接取得或可可靠重算時，優先用 digest。
-- source byte length 可作輔助 evidence，但不得單獨取代 digest/equivalence proof。
+Rules:
+- Official artifacts 不要求 installation Artifact Index mirror。
+- Official Skill 執行前仍必須讀全文。
+- Registry 與 Skill 若不是同一 snapshot -> `SOURCE_CONFLICT`。
+- Official source 無法讀取 -> `SOURCE_UNAVAILABLE` 或 `SKILL_UNAVAILABLE`。
 
-### Transfer rules
-- 優先 byte-preserving connector-file、binary-safe upload、provider-native copy 等不經模型重建內容的 transfer。
-- 模型不得把自己當 transport adapter；不得因 artifact 是 Markdown / YAML / 純文字，就重新生成內容後直接當 canonical copy。
-- write API 回成功只代表 destination mutation 成功，不代表 canonical artifact 安裝成功。
-
-### Verification rules
-- destination 必須重新 read-back；不能只依 write response。
-- equivalence 應比較 source/destination cryptographic digest；若 runtime 只能讀 normalized text，必須有明確 deterministic canonicalization，再於兩端重算同一 digest。
-- 「目視相同」、「字數接近」、「size 相同」不能單獨作為 verified equivalence。
-- equivalence PASS 前，不得建立 `binding_status: verified`。
-
-### Failure boundary
-- canonical source identity/content evidence 不可得 → `SOURCE_UNAVAILABLE`。
-- deterministic verified transfer path 不存在 → `RUNTIME_INCOMPATIBLE`（detail 可用 `ARTIFACT_TRANSFER_UNAVAILABLE`）。
-- destination write failure → `SAVE_FAILED`。
-- destination read-back 與 canonical source 不等價，或無法證明等價 → `SAVE_UNVERIFIED`。
-
-## Artifact Resolution Contract
+## Local Artifact Resolution
 ```text
-Registry / Brain Index
-  → logical artifact:// ID
-  → Artifact Index
-  → provider stable identity + revision/path hint
-  → Storage Provider
+Local Registry
+  -> artifact://installation/...
+  -> Artifact Index
+  -> provider stable identity + revision/path hint
+  -> installation Storage
 ```
 
-- 有 stable identity 時，不得以 path 作 authoritative identity。
-- provider 提供 revision 時，安裝/升級 verification 必須 read-back revision。
-- verified binding 還必須有 canonical artifact equivalence evidence；stable ID/revision 本身不能證明內容等價。
-- logical ID 找不到 → `ARTIFACT_UNRESOLVED`。
-- Artifact Index 不可用 → `ARTIFACT_INDEX_UNAVAILABLE`。
+Rules:
+- stable identity 優先於 path。
+- provider 支援 revision 時，write 後必須 read-back revision。
+- unresolved -> `ARTIFACT_UNRESOLVED` / `LOCAL_ARTIFACT_UNRESOLVED`。
+- Local Skill package mutation 仍遵守 write/read-back verification。
 
-## Runtime State
-- Runtime State 預設 ephemeral。
-- private chain-of-thought、temporary routing state、working trace 不得因 bootstrap 自動成為 production artifact。
-- 只有符合 Brain/Experience contract 且已確認可重用的內容，才可經獨立 persistence path 儲存。
+## Artifact Transfer Contract Scope
+Fresh v3 install **不需要**把 Official Skills 從 GitHub 複製到 Dropbox，因此 Official Skill installation 不再觸發 artifact transfer preflight。
 
-## Upgrade Contract
+Artifact transfer contract仍適用於：
+- Local/installation-owned artifact 寫入或搬移；
+- 明確 legacy import/migration；
+- 任何聲稱為 canonical copy 且需要 source↔destination equivalence 的操作。
+
+禁止把模型重新生成/轉寫內容當 byte-preserving transport；write success 不能取代 read-back verification。
+
+## Local Registry Bootstrap Contract
+初始 Local Registry：
+```yaml
+schema_version: 1
+registry_kind: eduharness-local-registry
+overlay_contract_version: 1
+scope: installation
+namespace: local
+status: active
+skills: []
+policies:
+  disabled_official_skills: []
+```
+
+- locator 僅存在 ENV/control-plane installation record。
+- Local Registry 不複製 Official entries。
+- Teacher Custom Skill 日後由 `cloud-skill-builder` 寫 Local Skill package + Artifact Index + Local Registry。
+
+## Upgrade v2 -> v3 Candidate Contract
 ### Preflight
-1. 讀 Bootstrap Descriptor。
-2. 讀正式 ENV。
-3. 解析 current Control Plane / Storage providers。
-4. 讀 Registry / Brain Index / Artifact Index。
-5. 讀 GitHub stable Distribution。
-6. 比對 schema、logical artifacts、provider capabilities 與 mutation scope。
-7. 對所有將被更新的 managed artifacts 執行 artifact transfer preflight，確認 canonical-equivalence 可驗證。
-8. 顯示 preserve set、mutation set、rollback/recovery plan。
-9. 重大 production overwrite / remap / migration 前取得 Human Gate。
+1. 讀現有 Bootstrap Descriptor。
+2. 讀現有 ENV、Registry v2、Brain Index、Artifact Index。
+3. pin 目標 v3 Distribution snapshot。
+4. 確認 active Kernel 已支援 Registry schema 3 / ENV schema 3 / Local Registry overlay contract。
+5. 建立 preserve / mutation / authority-switch / rollback plan。
+6. migration 屬重大 production routing/source-of-truth 變更，執行前必須 Human Gate。
 
-### Preserve set
-預設保留：
-- installation-specific Descriptor identity；
-- 正式 ENV，除非明確 schema migration；
-- user-owned Knowledge / Templates / Experience / Error Log / Output；
-- Brain Index 既有 user entries；
-- Runtime State（ephemeral，不納入 upgrade managed set）。
+### Preserve
+初次 cutover 預設保留：
+- Bootstrap Descriptor identity；
+- 舊 ENV，直到 ENV v3 fresh-start PASS；
+- Brain Index user entries；
+- Artifact Index user-owned entries；
+- user-owned Knowledge/Templates/Experience/Error Log/Output；
+- v2 已安裝的 17 個 Official Dropbox Skill mirrors。
 
-### Managed set
-可依 Distribution 更新：
-- Registry canonical semantics；
-- Distribution-managed Skill artifacts；
-- Distribution-managed Knowledge artifacts；
-- Manifest 明確宣告的 Brain Index additive migration；
-- Manifest 明確宣告的 Artifact Index mapping/remap。
+舊 Official mirrors 在 v3 只可標記為 legacy cache / rollback evidence，**不得刪除、不得繼續作 authoritative Official source**。
 
-### Recovery
-- 不假設 rollback 等於 Drive file copy。
-- 使用 Control Plane / Storage adapter 可用的 revision、snapshot、restore 或重新寫入機制。
-- 只復原此次 mutation 的 managed resources。
-- rollback 後必須從 Descriptor fresh bootstrap 再驗證。
+### Create / Switch
+- 建立 Local Registry。
+- 建立 ENV v3 的 `control_plane.local_registry` locator。
+- Official Registry authority：installation Registry v2 -> pinned GitHub Official Registry v3。
+- Official Skill authority：Dropbox mirrors -> pinned GitHub Official Skills。
+- Local Skill authority：Local Registry -> Artifact Index -> installation Storage。
+
+### Verification
+- immutable snapshot 可解析；
+- Official Registry v3 合法；
+- Local Registry v1 合法；
+- resolver fixtures / effective graph PASS；
+- Official Skill 可由同 snapshot 讀全文；
+- Local artifact refs 可從 Artifact Index 解析；
+- Descriptor fresh-start PASS；
+- 舊 v2 resources 未被破壞。
+
+### Rollback
+任何 verification failure：
+- 不刪 v2 resources；
+- 恢復 v2 ENV/Registry authority；
+- 只撤銷本次 v3 candidate mutation；
+- 再做 v2 fresh-start verification。
 
 ## Provider Boundaries
 ### Default Control Plane — Notion
-用於 ENV / Registry / Brain Index / Artifact Index 等 metadata/control records。Notion page/database IDs 屬 installation-specific locator，不得進 Canonical Kernel/Distribution。
+installation-owned ENV / Local Registry / Brain Index / Artifact Index metadata。Notion IDs 為 installation locator，不得進 Canonical Distribution。
 
 ### Default Storage — Dropbox
-用於 artifacts / output / work_area。優先使用 Dropbox stable ID；revision 可作 read-back / recovery evidence，但 canonical artifact installation 還必須通過 source↔destination equivalence verification。
+installation-owned Local artifacts / output / work_area。Official Skill mirror 不是 v3 fresh install requirement。
 
 ### Optional / Legacy — Google Drive
-可作 Storage Provider 或 migration source，但：
-- 首次安裝不得要求 Google Drive root；
-- Drive URL/ID 只存在 installation config/provider records；
-- 不得讓 Drive path tree 成為 Kernel/Brain/Registry schema。
+可作 supported Storage Provider 或 migration source，但首次安裝不得要求 Drive root。
+
+## Runtime State
+- Runtime State 預設 ephemeral。
+- Effective Routing View 預設 ephemeral。
+- private chain-of-thought、temporary routing state、working trace 不得自動持久化。
 
 ## Privacy / Portability
 - Distribution 不包含 installation-specific Notion/Dropbox/Drive locator。
@@ -192,19 +221,33 @@ Registry / Brain Index
 - `DISTRIBUTION_NOT_FOUND`
 - `DISTRIBUTION_INVALID`
 - `SOURCE_UNAVAILABLE`
+- `SOURCE_CONFLICT`
 - `RUNTIME_INCOMPATIBLE`
 - `ENV_AMBIGUOUS`
 - `INSTALL_ENV_GENERATION_FAILED`
 - `INSTALL_ENV_INVALID`
 - `EDU_REGISTRY_UNAVAILABLE`
+- `LOCAL_REGISTRY_INVALID`
 - `BRAIN_INDEX_UNAVAILABLE`
 - `ARTIFACT_INDEX_UNAVAILABLE`
 - `ARTIFACT_UNRESOLVED`
+- `SKILL_UNAVAILABLE`
+- `REGISTRY_GRAPH_INVALID`
+- `SKILL_ROUTE_LOOP`
 - `SAVE_FAILED`
 - `SAVE_UNVERIFIED`
 - `UPGRADE_PREFLIGHT_FAILED`
 - `UPGRADE_VERIFICATION_FAILED`
 - `UPGRADE_ROLLBACK_FAILED`
 
+## Human Gate Boundary
+必須 Gate：
+- v2 -> v3 production cutover；
+- 覆寫 ENV / Local Registry / Brain Index / Artifact Index；
+- Local Skill重大 overwrite/remap；
+- 刪除 legacy Official mirrors；
+- Canonical Distribution / Project Kernel promotion；
+- 任何可能破壞 routing 的治理變更。
+
 ## Completion Rule
-只有所有 required writes 實際成功、每個 Distribution-managed artifact 都通過 canonical-equivalence read-back、Control Plane 與 Storage identities 可 read-back、Descriptor fresh-start bootstrap 全部通過，才能宣稱 installation 或 upgrade 完成。
+Fresh v3 installation 只有在 installation-owned writes read-back 成功、Distribution snapshot/Official Registry/Official Skill 可讀、Local Registry/Brain/Artifact Index 合法、Effective Routing View 驗證成功且 Descriptor fresh-start PASS 後，才能宣稱 `INSTALLATION_READY`。

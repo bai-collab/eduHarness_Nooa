@@ -1,0 +1,239 @@
+schema_version: 1
+fixture_kind: eduharness-registry-v3-resolver-fixtures
+status: candidate
+contract:
+  official_registry_schema: 3
+  local_registry_schema: 1
+  local_overlay_contract_version: 1
+  effective_view_persistence: ephemeral
+
+cases:
+  - id: official_only
+    description: Official candidate resolves when no Local policy applies.
+    official:
+      - namespace_id: edu:lesson-plan-authoring
+        primary_capability: lesson_plan_authoring
+    local: {skills: [], disabled: []}
+    expect:
+      result: pass
+      effective_primary: edu:lesson-plan-authoring
+      provenance: official
+
+  - id: local_extend_new_capability
+    description: Local extend adds a capability absent from Official Registry.
+    official: []
+    local:
+      skills:
+        - namespace_id: local:reading-coach
+          mode: extend
+          primary_capability: reading_coaching
+    expect:
+      result: pass
+      effective_primary: local:reading-coach
+      provenance: local
+
+  - id: local_requires_official
+    description: Local Skill may require an Official Skill.
+    official:
+      - namespace_id: edu:reasoning-kernel
+    local:
+      skills:
+        - namespace_id: local:research-helper
+          mode: extend
+          primary_capability: research_helper
+          relations:
+            requires: [edu:reasoning-kernel]
+    expect:
+      result: pass
+      load_required: [edu:reasoning-kernel]
+
+  - id: explicit_local_override
+    description: Explicit Local override replaces exactly one Official target.
+    official:
+      - namespace_id: edu:lesson-plan-authoring
+        primary_capability: lesson_plan_authoring
+    local:
+      skills:
+        - namespace_id: local:my-lesson-plan
+          mode: override
+          overrides: {target: edu:lesson-plan-authoring}
+          primary_capability: lesson_plan_authoring
+    expect:
+      result: pass
+      effective_primary: local:my-lesson-plan
+      removed_from_effective_candidates: [edu:lesson-plan-authoring]
+
+  - id: local_disable_official
+    description: Local policy disables exact Official Skill identity.
+    official:
+      - namespace_id: edu:item-authoring
+        primary_capability: item_authoring
+    local:
+      disabled: [edu:item-authoring]
+      skills: []
+    expect:
+      result: pass
+      absent_from_effective_candidates: [edu:item-authoring]
+
+  - id: local_id_collision
+    description: Local may not impersonate Official identity.
+    official:
+      - namespace_id: edu:lesson-plan-authoring
+    local:
+      skills:
+        - namespace_id: edu:lesson-plan-authoring
+          mode: override
+          overrides: {target: edu:lesson-plan-authoring}
+    expect:
+      result: blocked
+      diagnostic: LOCAL_SKILL_ID_COLLISION
+
+  - id: implicit_capability_collision
+    description: Local extend cannot silently beat an Official Primary with the same capability.
+    official:
+      - namespace_id: edu:lesson-plan-authoring
+        primary_capability: lesson_plan_authoring
+    local:
+      skills:
+        - namespace_id: local:my-plan
+          mode: extend
+          primary_capability: lesson_plan_authoring
+    expect:
+      result: blocked
+      diagnostic: REGISTRY_CAPABILITY_CONFLICT
+
+  - id: override_target_missing
+    description: Override target must exist in pinned Official Registry.
+    official: []
+    local:
+      skills:
+        - namespace_id: local:my-plan
+          mode: override
+          overrides: {target: edu:lesson-plan-authoring}
+    expect:
+      result: blocked
+      diagnostic: LOCAL_OVERRIDE_TARGET_NOT_FOUND
+
+  - id: duplicate_override_target
+    description: Two Local overrides cannot target the same Official Skill.
+    official:
+      - namespace_id: edu:lesson-plan-authoring
+    local:
+      skills:
+        - namespace_id: local:plan-a
+          mode: override
+          overrides: {target: edu:lesson-plan-authoring}
+        - namespace_id: local:plan-b
+          mode: override
+          overrides: {target: edu:lesson-plan-authoring}
+    expect:
+      result: blocked
+      diagnostic: LOCAL_OVERRIDE_CONFLICT
+
+  - id: official_depends_on_local
+    description: Official Registry cannot author a dependency on installation-local nodes.
+    official:
+      - namespace_id: edu:official-a
+        relations:
+          requires: [local:helper]
+    local:
+      skills:
+        - namespace_id: local:helper
+          mode: extend
+    expect:
+      result: blocked
+      diagnostic: OFFICIAL_DEPENDS_ON_LOCAL
+
+  - id: local_to_local_requires
+    description: Local Skill may require another Local Skill when both resolve.
+    official: []
+    local:
+      skills:
+        - namespace_id: local:helper
+          mode: extend
+        - namespace_id: local:teacher-workflow
+          mode: extend
+          relations:
+            requires: [local:helper]
+    expect:
+      result: pass
+      load_required: [local:helper]
+
+  - id: cross_layer_requires_cycle
+    description: Effective graph validation blocks cycles spanning Local and Official candidates.
+    official:
+      - namespace_id: edu:official-a
+        relations:
+          requires: [edu:official-b]
+      - namespace_id: edu:official-b
+        relations:
+          requires: []
+    local:
+      skills:
+        - namespace_id: local:a-override
+          mode: override
+          overrides: {target: edu:official-a}
+          relations:
+            requires: [edu:official-b]
+        - namespace_id: local:b-override
+          mode: override
+          overrides: {target: edu:official-b}
+          relations:
+            requires: [local:a-override]
+    expect:
+      result: blocked
+      diagnostic: REGISTRY_GRAPH_INVALID
+
+  - id: human_gate_not_overridden
+    description: Local override cannot remove Project Human Gate requirements.
+    project_governance:
+      human_gate_required_for: [formal_assessment]
+    official:
+      - namespace_id: edu:item-authoring
+        primary_capability: item_authoring
+    local:
+      skills:
+        - namespace_id: local:fast-item-authoring
+          mode: override
+          overrides: {target: edu:item-authoring}
+          declared_human_gate_required_for: []
+    task:
+      formal_assessment: true
+    expect:
+      result: human_gate_required
+      governance_source: project
+
+  - id: snapshot_consistency
+    description: Official Registry and Skill must resolve from the same immutable distribution commit.
+    distribution_snapshot:
+      registry_ref: commit-A
+      skill_ref: commit-A
+    expect:
+      result: pass
+
+  - id: snapshot_mismatch
+    description: Mid-execution upstream drift must not mix Official versions.
+    distribution_snapshot:
+      registry_ref: commit-A
+      skill_ref: commit-B
+    expect:
+      result: blocked
+      diagnostic: SOURCE_CONFLICT
+
+coverage_requirements:
+  required_case_ids:
+    - official_only
+    - local_extend_new_capability
+    - local_requires_official
+    - explicit_local_override
+    - local_disable_official
+    - local_id_collision
+    - implicit_capability_collision
+    - override_target_missing
+    - duplicate_override_target
+    - official_depends_on_local
+    - local_to_local_requires
+    - cross_layer_requires_cycle
+    - human_gate_not_overridden
+    - snapshot_consistency
+    - snapshot_mismatch

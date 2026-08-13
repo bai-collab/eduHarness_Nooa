@@ -1,0 +1,53 @@
+schema_version: 1
+registry_kind: eduharness-local-registry
+overlay_contract_version: 1
+scope: installation
+namespace: local
+status: active
+
+skills: []
+
+policies:
+  disabled_official_skills: []
+
+validation:
+  local_namespace_required: true
+  official_identity_impersonation_allowed: false
+  implicit_override_allowed: false
+  duplicate_local_id_allowed: false
+  unresolved_artifact_action: stop
+  ambiguous_primary_action: stop
+  project_governance_override_allowed: false
+
+examples:
+  extend:
+    id: reading-coach
+    namespace_id: local:reading-coach
+    mode: extend
+    artifact_ref: artifact://installation/skill/reading-coach
+    capabilities: [reading_coaching]
+    selection:
+      triggers: ["閱讀理解引導", "閱讀策略"]
+      excludes: []
+    relations:
+      requires: []
+      enhances: []
+      routes: []
+      conflicts: []
+      replaces: []
+      supports: []
+
+  override:
+    id: my-lesson-plan
+    namespace_id: local:my-lesson-plan
+    mode: override
+    overrides:
+      target: edu:lesson-plan-authoring
+    artifact_ref: artifact://installation/skill/my-lesson-plan
+    capabilities: [lesson_plan_authoring]
+
+notes:
+  - "此檔為 installation Local Registry template，不是正式 ENV，也不是 Official Registry。"
+  - "Local Registry locator 由正式 ENV/control-plane configuration 解析；template 不保存 installation-specific locator。"
+  - "Teacher Custom Skill 可直接在自己的 installation 使用；只有 promotion 到 Official Distribution 才需要 upstream review。"
+  - "Local override 必須 explicit；同 capability 不代表自動覆蓋 Official。"

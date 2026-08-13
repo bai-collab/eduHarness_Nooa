@@ -36,8 +36,11 @@ Cross-provider baseline 以需求語意描述，例如：
 - `delete`
 - `share`
 - `revision_restore`
+- `artifact_transfer`
 
 `storage.update` **不是 universal required capability**。若工作需要 in-place update/replace，但 provider 未宣告等價能力，runtime MUST 回報 `ACCESS_UNAVAILABLE`（可附 provider-specific `REQUIRED_CAPABILITY_UNAVAILABLE` detail），不得以 delete/recreate、move 或其他高風險操作暗自模擬。
+
+`artifact_transfer` 不是單純「能 create file」。它代表 runtime 能把 canonical source artifact 以 deterministic、可驗證方式寫入 Storage，且可證明 destination content 與 canonical source 等價。
 
 ## Identity contract
 
@@ -68,6 +71,48 @@ Adapter 必須能：
 4. 寫入後 read-back identity/parent/revision；
 5. 失敗時回報 `SAVE_FAILED` 或更細 provider code；
 6. 無法驗證時回報 `SAVE_UNVERIFIED`。
+
+## Canonical Artifact Transfer Contract
+
+Distribution-managed Skill / Knowledge 從 Canonical Distribution 寫入 Storage 時，MUST 使用以下流程：
+
+1. `source_identity`
+   - 取得 canonical source 的 immutable identity；GitHub 可使用 blob SHA / commit-pinned blob identity。
+2. `source_content_evidence`
+   - 取得可供等價驗證的 content evidence，例如 byte length + cryptographic digest，或 runtime 能可靠重算的 canonical content digest。
+3. `transfer_preflight`
+   - 確認 runtime + source adapter + destination adapter 存在 deterministic transfer path。
+   - 只有「讀文字」與「create text file」不足以自動宣告 `artifact_transfer`。
+4. `transfer`
+   - 優先使用 byte-preserving connector-file / binary-safe upload / provider-native copy 等不經模型重建內容的路徑。
+5. `destination_readback`
+   - 寫入後重新取得 destination content/metadata、stable identity 與 revision（若 provider 支援）。
+6. `canonical_equivalence_verify`
+   - 比對 source 與 destination 的 canonical content evidence。
+   - cryptographic digest 可用時優先使用 digest；否則至少需要 deterministic canonicalization 後重新計算 digest，不能只比較「看起來相同」的文字。
+7. `bind`
+   - 只有 equivalence PASS 後，Artifact Index 才能把該 logical artifact 標記為 `verified`。
+
+### Forbidden fallback
+
+下列流程不得視為可靠 canonical artifact transfer：
+
+```text
+canonical source
+→ model paraphrase / regeneration / manual reconstruction
+→ text create API
+→ write success
+```
+
+模型不得因為 source 是純文字，就把自己當作 byte-preserving transport adapter。若模型必須重新輸出 source 內容才能呼叫 destination create API，而 runtime 又無法在 destination read-back 後證明 canonical equivalence，MUST 停止。
+
+### Failure boundary
+
+- source identity/content evidence 無法取得 → `SOURCE_UNAVAILABLE`。
+- 沒有 deterministic、可驗證 transfer path → `RUNTIME_INCOMPATIBLE`（可附 `ARTIFACT_TRANSFER_UNAVAILABLE` detail）。
+- destination write 失敗 → `SAVE_FAILED`。
+- destination 可讀但 canonical equivalence 不成立或無法證明 → `SAVE_UNVERIFIED`。
+- equivalence 未 PASS 前，不得建立 `binding_status: verified`，不得宣稱 installation/upgrade ready。
 
 ## Recovery
 

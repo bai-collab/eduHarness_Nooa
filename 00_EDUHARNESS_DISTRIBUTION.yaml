@@ -6,7 +6,7 @@ distribution:
   id: "eduHarness_Nooa"
   name: "eduHarness_Nooa"
   edition: "cloud"
-  version: "2026.08.12"
+  version: "2026.08.13"
   architecture_revision: "v0.2"
   channel: "stable"
   description: >
@@ -46,6 +46,8 @@ installation:
   preexisting_installation_policy: "inspect-before-write"
   overwrite_policy: "human-gate"
   google_drive_root_required: false
+  managed_artifact_transfer_policy: "deterministic-and-canonical-equivalence-verified"
+  model_regeneration_as_transport_allowed: false
 
 upstream:
   source: "project-kernel"
@@ -78,6 +80,26 @@ resources:
     ownership: "distribution-managed"
     loading: "on-demand-relevant-domain-only"
 
+artifact_transfer_contract:
+  scope: "all distribution-managed Skill and Knowledge artifacts"
+  source_identity_required: true
+  source_content_evidence_required: true
+  deterministic_transfer_required: true
+  destination_content_readback_required: true
+  canonical_equivalence_required: true
+  stable_identity_readback_required_when_supported: true
+  revision_readback_required_when_supported: true
+  verified_binding_before_equivalence_allowed: false
+  forbidden_fallbacks:
+    - "model paraphrase/regeneration/manual reconstruction used as transport"
+    - "write-success-only verification"
+    - "size-only or visual-similarity-only equivalence"
+  failure:
+    source_evidence_unavailable: "SOURCE_UNAVAILABLE"
+    transfer_path_unavailable: "RUNTIME_INCOMPATIBLE"
+    write_failed: "SAVE_FAILED"
+    equivalence_unverified: "SAVE_UNVERIFIED"
+
 bootstrap_contract:
   sequence:
     - "resolve canonical Distribution"
@@ -85,6 +107,9 @@ bootstrap_contract:
     - "resolve formal ENV from Descriptor"
     - "resolve Control Plane and Storage providers from ENV"
     - "resolve Registry / Brain Index / Artifact Index"
+    - "preflight deterministic verified artifact transfer capability"
+    - "install distribution-managed artifacts"
+    - "verify destination canonical equivalence before verified Artifact Index binding"
     - "resolve logical Skill/Knowledge artifacts through Artifact Index"
     - "verify provider stable identity and revision when supported"
     - "verify storage artifacts/output/work_area"
@@ -95,6 +120,7 @@ artifact_resolution:
   rule: "Registry/Brain records SHOULD point to logical artifact:// references. Artifact Index resolves logical IDs to provider identity. Stable provider identity is authoritative over path when available."
   required_fields: [artifact_id, provider, identity_type, identity_value, identity_strength, status]
   revision_readback: "required when provider exposes revisions"
+  verified_binding_rule: "distribution-managed artifact status may be verified only after canonical-equivalence verification passes"
 
 upgrade_contract:
   detect:
@@ -107,6 +133,7 @@ upgrade_contract:
     - "required canonical contracts readable"
     - "actual Control Plane and Storage providers are resolvable with current tools/ACL"
     - "all mutation targets uniquely resolved"
+    - "all managed artifact mutations have deterministic canonical-equivalence-verifiable transfer path"
   preserve:
     - "installation-specific Bootstrap Descriptor locator unless migration explicitly requires replacement"
     - "formal ENV unless migration explicitly requires schema conversion"
@@ -127,6 +154,7 @@ upgrade_contract:
     - "Brain Index logical refs resolve"
     - "Artifact Index logical refs resolve to provider identities"
     - "required Skill/Knowledge artifacts read back"
+    - "distribution-managed artifact canonical equivalence passes"
     - "stable identity/revision read-back passes when supported"
     - "storage artifacts/output/work_area resolve"
     - "no installation-specific locator leaked into Kernel/Distribution"
@@ -152,6 +180,9 @@ verification:
     - "registry_typed_relations_preserved"
     - "brain_artifact_layering_supported"
     - "artifact_index_required"
+    - "managed_artifact_transfer_preflight_required"
+    - "managed_artifact_canonical_equivalence_required"
+    - "model_regeneration_not_accepted_as_transport"
     - "runtime_state_ephemeral"
     - "human_gate_preserved"
     - "failure_contract_preserved"

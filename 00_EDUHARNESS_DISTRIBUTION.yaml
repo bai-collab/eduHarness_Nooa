@@ -14,6 +14,19 @@ distribution:
     GitHub provides Official Registry/Official Skills from an immutable distribution snapshot;
     Teacher installations own Local Registry, Brain Index, Artifact Index and Storage resources.
 
+candidate_dependencies:
+  official_registry_v3:
+    source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml"
+    required_schema: 3
+    current_candidate_state: "pending"
+    blocking: true
+    rule: "Phase 3 bootstrap MUST NOT declare executable/ready until the pinned Official Registry file itself validates as schema 3."
+  project_kernel_registry_v3_support:
+    required: true
+    current_candidate_state: "pending"
+    blocking_for_production: true
+    rule: "Current production Kernel supports Registry schema 1/2 only; schema 3 promotion requires coordinated Kernel migration and Human Gate."
+
 compatibility:
   project_kernel_version_required: "registry-schema-3-capable"
   project_instruction_upgrade_policy: "kernel-breaking-change-requires-migration"
@@ -86,6 +99,7 @@ bootstrap_contract:
   sequence:
     - "resolve canonical Distribution"
     - "pin immutable distribution snapshot"
+    - "verify Official Registry source itself is schema 3; otherwise stop"
     - "resolve or create installation Bootstrap Descriptor"
     - "resolve formal ENV from Descriptor"
     - "resolve installation Control Plane and Storage providers from ENV"
@@ -136,6 +150,7 @@ upgrade_contract:
     verify:
       - "Kernel supports Registry schema 3"
       - "immutable distribution snapshot resolves"
+      - "Official Registry source itself is schema 3"
       - "Official Registry schema 3 validates"
       - "Local Registry schema 1 validates"
       - "Effective Routing View passes resolver fixtures/graph validation"
@@ -159,6 +174,7 @@ verification:
     - "registry_v3_dual_layer_contract_readable"
     - "local_registry_contract_readable"
     - "env_schema_3_provider_neutral"
+    - "official_registry_source_schema_3"
     - "official_registry_remote_snapshot_model"
     - "local_registry_installation_model"
     - "effective_routing_view_ephemeral"
@@ -169,7 +185,7 @@ verification:
     - "failure_contract_preserved"
     - "google_drive_not_required_for_installation"
     - "no_installation_specific_locator_in_canonical_kernel_or_distribution"
-  ready_state: "REGISTRY_V3_CANDIDATE_READY_FOR_KERNEL_AND_BOOTSTRAP_TESTING"
+  ready_state: "BLOCKED_PENDING_OFFICIAL_REGISTRY_V3_AND_KERNEL_SUPPORT"
 
 failure:
   descriptor_not_found: "EDUHARNESS_DESCRIPTOR_NOT_FOUND"

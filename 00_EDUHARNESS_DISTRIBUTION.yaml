@@ -20,15 +20,22 @@ candidate_dependencies:
     required_schema: 3
     current_candidate_state: "satisfied"
     blocking: false
-    evidence: "Official Registry candidate declares schema_version=3, registry_kind=eduharness-official-registry, authority=canonical_distribution, mutability=read_only and 17 Official Skills resolved from distribution paths."
+    evidence: "Official Registry candidate declares schema_version=3 and 17 Official Skills resolved from distribution paths."
   project_kernel_registry_v3_support:
     required: true
-    current_candidate_state: "pending"
+    current_candidate_state: "satisfied_in_candidate"
+    blocking_for_candidate_test: false
     blocking_for_production: true
-    rule: "Current production Kernel supports Registry schema 1/2 only; schema 3 promotion requires coordinated Kernel migration and Human Gate."
+    evidence: "00_PROJECT_INSTRUCTIONS.yaml candidate supports Registry schemas 1/2/3 and dual-layer routing; canonical text length 7764 chars."
+    production_rule: "Promotion remains a breaking Kernel governance change and requires explicit Human Gate plus Project Instructions migration."
+  executable_resolver:
+    required: true
+    current_candidate_state: "satisfied"
+    blocking: false
+    evidence: "GitHub Actions Registry v3 Resolver Candidate run 31672762432 completed success; resolver fixtures 16/16 PASS."
 
 compatibility:
-  project_kernel_version_required: "registry-schema-3-capable"
+  project_kernel_version_required: "eduHarness Cloud v2.1.0 Candidate or later schema-3-capable Kernel"
   project_instruction_upgrade_policy: "kernel-breaking-change-requires-migration"
   project_instructions_repaste_required_for_v3_cutover: true
   installation_env_kind: "eduHarness-cloud"
@@ -39,6 +46,7 @@ compatibility:
   local_overlay_contract_version: 1
   routing_guard_contract_version: "2.1"
   runtime_targets: [chatgpt_web, gemini_spark]
+  legacy_registry_schema_support: [1, 2]
 
 architecture:
   installation_entry: "bootstrap_descriptor"
@@ -71,12 +79,13 @@ upstream:
   repository_field: "upstream.repository"
   branch_field: "upstream.branch"
   snapshot_policy: "resolve branch to immutable commit before loading Official Registry/Skill/Knowledge"
-  rule: "Official Distribution 從 Project Kernel 宣告的 GitHub upstream 解析；一次 execution 內 Official Registry/Skill/Knowledge 必須使用同一 immutable commit snapshot。"
+  rule: "一次 execution 內 Official Registry/Skill/Knowledge 必須使用同一 immutable commit snapshot。"
 
 canonical_contracts:
   bootstrap_descriptor: {source: "docs/BOOTSTRAP_DESCRIPTOR_CONTRACT.md", required: true}
   registry_v3_dual_layer: {source: "docs/REGISTRY_V3_DUAL_LAYER_CONTRACT.md", required: true}
   local_registry: {source: "docs/LOCAL_REGISTRY_CONTRACT.md", required: true}
+  runtime_resolver: {source: "00_ADMIN/REGISTRY_V3_RUNTIME_RESOLVER.yaml", required: true}
   control_plane: {source: "docs/CONTROL_PLANE_CONTRACT.md", required: true}
   storage_adapter: {source: "docs/STORAGE_ADAPTER_CONTRACT.md", required: true}
   runtime_state: {source: "docs/RUNTIME_STATE_CONTRACT.md", required: true}
@@ -88,7 +97,9 @@ resources:
   env_template: {type: file, source: "00_EDUHARNESS_ENV_TEMPLATE.yaml", required: true}
   official_registry: {type: canonical_distribution_resource, source: "00_ADMIN/00_EDU_SKILL_REGISTRY.yaml", required: true, ownership: "official"}
   local_registry_template: {type: installation_template, source: "00_ADMIN/LOCAL_REGISTRY_TEMPLATE.yaml", required: true, ownership: "installation"}
+  resolver_contract: {type: runtime_contract, source: "00_ADMIN/REGISTRY_V3_RUNTIME_RESOLVER.yaml", required: true}
   resolver_fixtures: {type: regression_fixture, source: "00_ADMIN/REGISTRY_V3_RESOLVER_FIXTURES.yaml", required: true}
+  resolver_test: {type: validation_tool, source: "tools/registry-v3-resolver", required: true}
   brain_index: {type: installation_control_plane_resource, required: true}
   artifact_index: {type: installation_control_plane_resource, required: true}
   bootstrap_descriptor: {type: installation_entry_resource, required: true}
@@ -99,7 +110,8 @@ bootstrap_contract:
   sequence:
     - "resolve canonical Distribution"
     - "pin immutable distribution snapshot"
-    - "verify Official Registry source itself is schema 3; otherwise stop"
+    - "verify active Kernel supports Official Registry schema 3"
+    - "verify Official Registry source itself is schema 3"
     - "resolve or create installation Bootstrap Descriptor"
     - "resolve formal ENV from Descriptor"
     - "resolve installation Control Plane and Storage providers from ENV"
@@ -107,7 +119,7 @@ bootstrap_contract:
     - "verify artifacts/output/work_area"
     - "read Official Registry from pinned snapshot"
     - "validate Official Registry and Local Registry independently"
-    - "build and validate ephemeral Effective Routing View"
+    - "apply REGISTRY_V3_RUNTIME_RESOLVER contract and build ephemeral Effective Routing View"
     - "resolve Official Skills directly from pinned snapshot on demand"
     - "resolve Local Skills through Local Registry -> Artifact Index -> installation Storage"
     - "fresh-start bootstrap from Descriptor"
@@ -150,10 +162,9 @@ upgrade_contract:
     verify:
       - "Kernel supports Registry schema 3"
       - "immutable distribution snapshot resolves"
-      - "Official Registry source itself is schema 3"
       - "Official Registry schema 3 validates"
       - "Local Registry schema 1 validates"
-      - "Effective Routing View passes resolver fixtures/graph validation"
+      - "Effective Routing View passes executable resolver fixtures/graph validation"
       - "Official Skill full text is readable from pinned snapshot"
       - "Local artifact refs resolve through installation Artifact Index"
       - "fresh bootstrap from Descriptor succeeds"
@@ -171,8 +182,12 @@ distribution_privacy:
 
 verification:
   required:
+    - "kernel_schema_3_candidate_support"
+    - "kernel_canonical_char_count_le_7800"
     - "registry_v3_dual_layer_contract_readable"
     - "local_registry_contract_readable"
+    - "runtime_resolver_contract_readable"
+    - "resolver_fixtures_16_of_16_pass"
     - "env_schema_3_provider_neutral"
     - "official_registry_source_schema_3"
     - "official_registry_remote_snapshot_model"
@@ -183,9 +198,7 @@ verification:
     - "artifact_index_scoped_to_installation_owned_artifacts"
     - "human_gate_preserved"
     - "failure_contract_preserved"
-    - "google_drive_not_required_for_installation"
-    - "no_installation_specific_locator_in_canonical_kernel_or_distribution"
-  ready_state: "BLOCKED_PENDING_KERNEL_SCHEMA_3_SUPPORT"
+  ready_state: "REGISTRY_V3_CANDIDATE_READY_FOR_CLEANROOM_ACCEPTANCE"
 
 failure:
   descriptor_not_found: "EDUHARNESS_DESCRIPTOR_NOT_FOUND"

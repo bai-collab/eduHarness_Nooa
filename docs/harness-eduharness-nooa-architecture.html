@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Harness → eduHarness → eduHarness_Nooa 架構視覺化</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--text:#16202a;--muted:#64748b;--line:#d8dee8;--a:#3559a6;--b:#28786b;--c:#8154a8;--warn:#9a6a13;--ok:#237a57;--sa:#eef3ff;--sb:#ebf7f3;--sc:#f5effa;--sw:#fff7e8}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;background:var(--bg);color:var(--text);line-height:1.6}a{color:#2457a6}.wrap{max-width:1180px;margin:auto;padding:24px}.hero{background:linear-gradient(135deg,#172033,#28364c);color:white;border-radius:24px;padding:28px}.hero h1{font-size:clamp(28px,5vw,48px);line-height:1.1;margin:0 0 10px}.hero p{color:#dbe4f0}.badges,.toolbar{display:flex;gap:8px;flex-wrap:wrap}.badge{border:1px solid #ffffff33;background:#ffffff12;border-radius:999px;padding:6px 10px;font-size:13px}.toolbar{margin:18px 0}.toolbar button{border:1px solid var(--line);background:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700}.toolbar button[aria-selected="true"]{background:#172033;color:white}.panel{display:none}.panel.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.kicker{font-size:12px;letter-spacing:.08em;font-weight:800;color:var(--muted)}.big{font-size:25px;font-weight:800}.small{font-size:13px;color:var(--muted)}.arch{overflow:auto}svg{max-width:100%;height:auto;min-width:820px}.node{rx:14;ry:14;stroke-width:1.5}.t{font-size:14px;font-weight:750;fill:#182230}.s{font-size:11px;fill:#526173}.timeline{display:grid;grid-template-columns:1fr 50px 1fr 50px 1fr;align-items:stretch}.stage{border-radius:18px;border:1px solid var(--line);padding:18px;background:white}.stage.a{border-top:5px solid var(--a)}.stage.b{border-top:5px solid var(--b)}.stage.c{border-top:5px solid var(--c)}.connector{display:grid;place-items:center;font-size:28px;color:var(--muted)}table{width:100%;border-collapse:collapse}th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:13px;color:#445064;background:#f8fafc}.status{display:inline-block;border-radius:999px;padding:2px 7px;font-size:12px;font-weight:750}.ok{background:#eaf7f0;color:#1b6b49}.warn{background:#fff4dc;color:#855a0c}.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#111827;color:#e5edf7;border-radius:14px;padding:14px;overflow:auto;white-space:pre}.callout{border-left:4px solid var(--warn);background:var(--sw);padding:12px 14px;border-radius:8px;margin:12px 0}details{border:1px solid var(--line);border-radius:14px;background:white;padding:12px 14px;margin:10px 0}summary{cursor:pointer;font-weight:750}.sources li{margin:8px 0}
+@media(max-width:820px){.wrap{padding:12px}.hero{padding:20px}.grid2,.grid3,.timeline{grid-template-columns:1fr}.connector{transform:rotate(90deg);height:42px}.card{padding:14px}table{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+<div class="kicker" style="color:#aebbd0">架構地圖 · 來源可追溯</div>
+<h1>Harness → eduHarness → eduHarness_Nooa</h1>
+<p>區分通用 Harness、本機 Harness、教育領域 eduHarness，以及 eduHarness_Nooa 的 Cloud / Registry v3 架構；並說明 Skill 如何按使用者用途組成工作流程。</p>
+<div class="badges">
+<span class="badge">基本 Harness：模型外圍執行／治理層</span>
+<span class="badge">本機 Harness：可插拔治理引擎</span>
+<span class="badge">eduHarness：教育領域化</span>
+<span class="badge">Skill：按需載入</span>
+<span class="badge">Nooa：v0.3 / Registry v3</span>
+</div>
+</section>
+
+<nav class="toolbar" aria-label="架構視圖">
+<button data-tab="overview" aria-selected="true">演進總覽</button>
+<button data-tab="basic">基本 Harness</button>
+<button data-tab="local">本機 Harness</button>
+<button data-tab="edu">eduHarness</button>
+<button data-tab="skills">Skill 與工作流程</button>
+<button data-tab="nooa">eduHarness_Nooa</button>
+<button data-tab="compare">差異比較</button>
+<button data-tab="evidence">證據來源</button>
+</nav>
+
+<main>
+<section id="overview" class="panel active">
+<div class="card">
+<div class="kicker">概念基準</div>
+<h2>先把「基本 Harness」與「本機 Harness」分開</h2>
+<p><strong>基本／通用 Harness</strong> 是 AI Agent 的概念層：位於模型與外部世界之間，負責 context／memory、工具調用、權限、state、執行迴圈、錯誤處理、verification 與 observability。</p>
+<p><strong>本機 Harness</strong> 則是 <code>eduHarness-/harness/</code> 的具體實作，包含 Kernel、Registry、Route Plan、Skill resolution、platform preflight、user authority、verify / replan。</p>
+<div class="callout"><strong>重要：</strong>「基本 Harness → 本機 Harness」是概念到實作的對照，不表示 repository fork 或版本血統。</div>
+</div>
+<div class="timeline">
+<article class="stage a"><div class="kicker">01 · 本機 Harness</div><div class="big">治理＋執行骨架</div><p>把任務拆成可驗證 blocks，以 Route Plan、平台預檢、使用者權限、執行與 verifier 管理生命週期。</p></article>
+<div class="connector">→</div>
+<article class="stage b"><div class="kicker">02 · eduHarness</div><div class="big">教育領域化</div><p>在 Harness 上加入 Brain、教育 Knowledge、17 個 Skill packages、教案／命題／遊戲／視覺等工作流。</p></article>
+<div class="connector">→</div>
+<article class="stage c"><div class="kicker">03 · eduHarness_Nooa</div><div class="big">雲端與雙層治理</div><p>把安裝、控制平面、儲存與 canonical distribution 解耦；Registry v3 分成 Official + Local。</p><p class="small">Distribution：2026.08.13-registry-v3 · architecture v0.3 · stable</p></article>
+</div>
+</section>
+
+<section id="basic" class="panel">
+<div class="card">
+<h2>基本 Harness 是什麼？</h2>
+<p>LLM／模型負責理解、生成與提出候選行動；Harness 則是模型外圍的<strong>執行、控制與證據層</strong>，決定模型能看到什麼、能使用哪些工具、哪些動作允許執行、狀態如何保存，以及結果怎麼驗證。</p>
+</div>
+<div class="card arch">
+<h2>基本 Harness 概念圖</h2>
+<svg viewBox="0 0 1120 560">
+<defs><marker id="m1" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#6c7888"/></marker></defs>
+<rect class="node" x="420" y="20" width="280" height="70" fill="#fff7e8" stroke="#9a6a13"/><text class="t" x="560" y="50" text-anchor="middle">使用者目標／任務</text><text class="s" x="560" y="72" text-anchor="middle">goal · constraints · approval</text>
+<rect class="node" x="185" y="135" width="750" height="300" fill="#eef3ff" stroke="#3559a6" stroke-width="2"/><text class="t" x="560" y="168" text-anchor="middle" style="font-size:18px">基本 Harness（模型外圍執行／治理層）</text>
+<rect class="node" x="225" y="205" width="200" height="82" fill="#fff" stroke="#6f86bb"/><text class="t" x="325" y="235" text-anchor="middle">脈絡與記憶</text><text class="s" x="325" y="260" text-anchor="middle">Context / Memory</text>
+<rect class="node" x="460" y="205" width="200" height="82" fill="#fff" stroke="#6f86bb"/><text class="t" x="560" y="235" text-anchor="middle">規劃與控制迴圈</text><text class="s" x="560" y="260" text-anchor="middle">Plan / Act / Observe</text>
+<rect class="node" x="695" y="205" width="200" height="82" fill="#fff" stroke="#6f86bb"/><text class="t" x="795" y="235" text-anchor="middle">工具與路由</text><text class="s" x="795" y="260" text-anchor="middle">Tools / Routing</text>
+<rect class="node" x="225" y="325" width="200" height="82" fill="#fff" stroke="#6f86bb"/><text class="t" x="325" y="355" text-anchor="middle">權限與防護</text><text class="s" x="325" y="380" text-anchor="middle">Permissions / Guardrails</text>
+<rect class="node" x="460" y="325" width="200" height="82" fill="#fff" stroke="#6f86bb"/><text class="t" x="560" y="355" text-anchor="middle">狀態與復原</text><text class="s" x="560" y="380" text-anchor="middle">State / Recovery</text>
+<rect class="node" x="695" y="325" width="200" height="82" fill="#fff" stroke="#6f86bb"/><text class="t" x="795" y="355" text-anchor="middle">驗證與可觀測性</text><text class="s" x="795" y="380" text-anchor="middle">Verification / Observability</text>
+<rect class="node" x="30" y="220" width="120" height="150" fill="#ebf7f3" stroke="#28786b"/><text class="t" x="90" y="255" text-anchor="middle">LLM／模型</text><text class="s" x="90" y="285" text-anchor="middle">理解 · 推理</text><text class="s" x="90" y="310" text-anchor="middle">生成 · 候選行動</text>
+<rect class="node" x="970" y="205" width="120" height="180" fill="#f5effa" stroke="#8154a8"/><text class="t" x="1030" y="240" text-anchor="middle">外部世界</text><text class="s" x="1030" y="275" text-anchor="middle">Tools / APIs</text><text class="s" x="1030" y="300" text-anchor="middle">Files / DB</text><text class="s" x="1030" y="325" text-anchor="middle">Apps / Shell</text>
+<rect class="node" x="405" y="475" width="310" height="62" fill="#ebf7f3" stroke="#28786b"/><text class="t" x="560" y="502" text-anchor="middle">結果＋可稽核證據</text><text class="s" x="560" y="523" text-anchor="middle">result · trace · checks · uncertainty</text>
+<g stroke="#6c7888" fill="none" stroke-width="1.8" marker-end="url(#m1)"><path d="M560 90V135"/><path d="M185 285H150"/><path d="M935 285H970"/><path d="M560 435V475"/></g>
+</svg>
+<p class="small">⚠️ AI 根據通用 Agent Harness 文件整理，不是任何單一產品的官方 Figure。</p>
+</div>
+</section>
+
+<section id="local" class="panel">
+<div class="card">
+<h2>本機 Harness：eduHarness repository 裡的具體實作</h2>
+<p>原始架構把治理規則與執行環境分開，並使用 Kernel、Environment、Skill packages、Registry、Reasoning blocks、Route Plan、Skill resolution、Platform preflight、Runtime adapters 與 State。</p>
+</div>
+<div class="card arch">
+<h2>自適應任務循環：從理解任務到驗證與重規劃</h2>
+<svg viewBox="0 0 1120 300">
+<defs><marker id="m2" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#6c7888"/></marker></defs>
+<g fill="#eef3ff" stroke="#3559a6" stroke-width="1.5">
+<rect x="20" y="45" width="125" height="72" rx="14"/><rect x="165" y="45" width="125" height="72" rx="14"/><rect x="310" y="45" width="125" height="72" rx="14"/><rect x="455" y="45" width="135" height="72" rx="14"/><rect x="610" y="45" width="145" height="72" rx="14"/><rect x="775" y="45" width="145" height="72" rx="14"/><rect x="940" y="45" width="145" height="72" rx="14"/>
+<rect x="820" y="185" width="155" height="72" rx="14"/><rect x="645" y="185" width="145" height="72" rx="14"/><rect x="480" y="185" width="135" height="72" rx="14"/><rect x="315" y="185" width="135" height="72" rx="14"/>
+</g>
+<g text-anchor="middle">
+<text class="t" x="82" y="75">任務分類</text><text class="s" x="82" y="96">classify</text>
+<text class="t" x="227" y="75">補充脈絡？</text><text class="s" x="227" y="96">context?</text>
+<text class="t" x="372" y="75">需要推理？</text><text class="s" x="372" y="96">reason?</text>
+<text class="t" x="522" y="75">建立路由計畫</text><text class="s" x="522" y="96">route-plan</text>
+<text class="t" x="682" y="70">平台可用性</text><text class="t" x="682" y="89">預先檢查</text><text class="s" x="682" y="105">platform preflight</text>
+<text class="t" x="847" y="70">使用者權限</text><text class="t" x="847" y="89">與裁決</text><text class="s" x="847" y="105">user authority</text>
+<text class="t" x="1012" y="75">任務派送</text><text class="s" x="1012" y="96">dispatch</text>
+<text class="t" x="897" y="215">執行／準備</text><text class="s" x="897" y="236">execute / prepare</text>
+<text class="t" x="717" y="215">結果整合？</text><text class="s" x="717" y="236">reconcile?</text>
+<text class="t" x="547" y="215">驗證結果</text><text class="s" x="547" y="236">verify</text>
+<text class="t" x="382" y="215">重新規劃？</text><text class="s" x="382" y="236">replan?</text>
+</g>
+<g stroke="#6c7888" fill="none" stroke-width="1.8" marker-end="url(#m2)">
+<path d="M145 81H165"/><path d="M290 81H310"/><path d="M435 81H455"/><path d="M590 81H610"/><path d="M755 81H775"/><path d="M920 81H940"/><path d="M1012 117V160Q1012 190 975 210"/><path d="M820 221H790"/><path d="M645 221H615"/><path d="M480 221H450"/>
+</g>
+</svg>
+</div>
+<div class="grid3">
+<div class="card"><h3>前段：理解與規劃</h3><p>任務分類 → 脈絡 → 推理 → Route Plan。</p></div>
+<div class="card"><h3>中段：權限與執行</h3><p>平台預檢 → 使用者裁決 → 派送 → 執行。</p></div>
+<div class="card"><h3>後段：整合與修正</h3><p>結果整合 → 驗證 → 只重規劃受影響路徑。</p></div>
+</div>
+</section>
+
+<section id="edu" class="panel">
+<div class="card">
+<h2>eduHarness：把 Harness 變成教育工作台</h2>
+<p>eduHarness 在本機 Harness 上加入 Brain／Knowledge／Templates 與 17 個 Skill packages，涵蓋教案、數位學習、差異化、命題、臆測、文件攝取、推理、Web 教學遊戲、3D、視覺與寫作輸出。</p>
+</div>
+<div class="grid2">
+<div class="card"><h3>Skill</h3><p>針對特定教育或產出工作整理好的能力模組，包含使用時機、輸出規則、相依 Skill、工具與驗證方式。</p></div>
+<div class="card"><h3>Brain</h3><p>知識、Skill 與範本先索引、後按需載入；不因建立任務就把全部資料放入 context。</p></div>
+</div>
+<div class="callout"><strong>架構重點：</strong>Route Plan 決定工作節點與依賴；Skill resolution 決定這些節點需要哪些 Primary／Supporting Skill。Skill 不會偷偷改寫 Route Plan。</div>
+</section>
+
+<section id="skills" class="panel">
+<div class="card">
+<h2>Skill 的功能與套件契約</h2>
+<p>Skill 不只是 prompt；它是可註冊、可驗證、可按需載入的工作能力套件。Registry 記錄 ID、繁中名稱、kind、trigger／anti-trigger、dependencies、capabilities、preferred platforms、verifier policy、required files 與 package hash。</p>
+</div>
+<details open><summary>教學、命題與推理（7）</summary>
+<table><thead><tr><th>Skill</th><th>功能</th></tr></thead><tbody>
+<tr><td>教案撰寫<br><code>lesson-plan-authoring</code></td><td>依學習目標設計活動、流程、差異化與評量，檢查對齊。</td></tr>
+<tr><td>數位學習精進教案<br><code>digital-learning-lesson-plan</code></td><td>加入平台使用、學習證據、離線備援與提交格式。</td></tr>
+<tr><td>教案差異化教學<br><code>lesson-differentiation</code></td><td>將既有教案調整為分層、補救、支持與延伸。</td></tr>
+<tr><td>試題命題<br><code>item-authoring</code></td><td>設計題型、題庫與 coverage，保留人工審查。</td></tr>
+<tr><td>臆測五階段<br><code>conjecturing-five-stage</code></td><td>設計臆測、驗證、反例與修正的數學活動。</td></tr>
+<tr><td>AI 文件 Markdown 轉換<br><code>document-to-markdown-ingestion</code></td><td>安全擷取文件內容，供摘要、比較與後續分析。</td></tr>
+<tr><td>證據式推理核心<br><code>reasoning-kernel</code></td><td>管理假設、證據、檢查、反例與不確定性。</td></tr>
+</tbody></table></details>
+<details><summary>遊戲、Web 與 3D（6）</summary>
+<table><tbody>
+<tr><td>教材轉闖關遊戲</td><td>教材／目標 → 闖關遊戲規格與試玩設計。</td></tr>
+<tr><td>教育 Web 教學遊戲工作流</td><td>DOM-first Web 教學遊戲製作與視覺驗證。</td></tr>
+<tr><td>闖關遊戲 Three.js 導入</td><td>評估 3D 導入、效能、可及性與 Pilot。</td></tr>
+<tr><td>圖片轉 3D 場景</td><td>視覺需求 → 可環繞 3D 展示與程序化場景。</td></tr>
+<tr><td>網頁版面拓樸分析</td><td>Responsive、重疊、遮擋與元件矩形分析。</td></tr>
+<tr><td>程序化場景共用世界與量測迭代</td><td>共用欄位、量測指標、效能 baseline 與可重現迭代。</td></tr>
+</tbody></table></details>
+<details><summary>視覺、寫作與輸出（4）</summary>
+<table><tbody>
+<tr><td>美工與分鏡設計</td><td>角色、場景、畫面風格與八格分鏡。</td></tr>
+<tr><td>Pixel AI 美術提示詞祕書</td><td>角色一致性、四視角與 Pixel Art 提示詞套件。</td></tr>
+<tr><td>海明威寫作法</td><td>將文字改寫得具體、清楚、有畫面感。</td></tr>
+<tr><td>行動優先輸出</td><td>明確啟用時優先顯示下一步、短步驟與狀態。</td></tr>
+</tbody></table></details>
+
+<div class="card arch">
+<h2>使用者用途 → Skill workflow</h2>
+<svg viewBox="0 0 1160 680">
+<defs><marker id="m3" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#6c7888"/></marker></defs>
+<rect class="node" x="390" y="20" width="380" height="70" fill="#fff7e8" stroke="#9a6a13"/><text class="t" x="580" y="48" text-anchor="middle">使用者自然語言需求</text><text class="s" x="580" y="70" text-anchor="middle">用途＋來源＋限制＋成果</text>
+<rect class="node" x="330" y="120" width="500" height="100" fill="#fff7e8" stroke="#9a6a13" stroke-dasharray="6 4"/><text class="t" x="580" y="150" text-anchor="middle">語意理解／任務結構化</text><text class="s" x="580" y="176" text-anchor="middle">goal · input · output · constraints · risk · steps</text><text class="s" x="580" y="199" text-anchor="middle">⚠️ classify.mjs 本身不是完整自然語言 Skill router</text>
+<rect class="node" x="25" y="275" width="245" height="125" fill="#eef3ff" stroke="#3559a6"/><text class="t" x="147" y="306" text-anchor="middle">① Profile／複雜度</text><text class="s" x="147" y="333" text-anchor="middle">simple / standard / complex</text><text class="s" x="147" y="358" text-anchor="middle">risk · ambiguity · conflict · steps</text>
+<rect class="node" x="305" y="275" width="245" height="125" fill="#eef3ff" stroke="#3559a6"/><text class="t" x="427" y="306" text-anchor="middle">② Route Plan</text><text class="s" x="427" y="333" text-anchor="middle">objective · depends_on</text><text class="s" x="427" y="358" text-anchor="middle">platform · fallback · verifier</text>
+<rect class="node" x="585" y="275" width="245" height="125" fill="#ebf7f3" stroke="#28786b"/><text class="t" x="707" y="306" text-anchor="middle">③ Skill resolution</text><text class="s" x="707" y="333" text-anchor="middle">Primary + Supporting</text><text class="s" x="707" y="358" text-anchor="middle">conditional dependencies</text>
+<rect class="node" x="865" y="275" width="245" height="125" fill="#fff7e8" stroke="#9a6a13"/><text class="t" x="987" y="306" text-anchor="middle">④ 使用者裁決</text><text class="s" x="987" y="333" text-anchor="middle">optional dependency？</text><text class="s" x="987" y="358" text-anchor="middle">required gap / complex approval</text>
+<rect class="node" x="245" y="480" width="300" height="115" fill="#f5effa" stroke="#8154a8"/><text class="t" x="395" y="512" text-anchor="middle">⑤ Platform preflight</text><text class="s" x="395" y="540" text-anchor="middle">可用 → resolved route</text><text class="s" x="395" y="565" text-anchor="middle">不可用 → fallback / deferred</text>
+<rect class="node" x="615" y="480" width="300" height="115" fill="#f5effa" stroke="#8154a8"/><text class="t" x="765" y="512" text-anchor="middle">⑥ Dispatch</text><text class="s" x="765" y="540" text-anchor="middle">topological order</text><text class="s" x="765" y="565" text-anchor="middle">node + objective + Skill + platform</text>
+<g stroke="#6c7888" fill="none" stroke-width="1.8" marker-end="url(#m3)"><path d="M580 90V120"/><path d="M580 220V250H147V275"/><path d="M270 337H305"/><path d="M550 337H585"/><path d="M830 337H865"/><path d="M987 400V440H765V480"/><path d="M865 385C800 445 610 440 545 520"/><path d="M545 537H615"/></g>
+</svg>
+</div>
+
+<div class="card">
+<h2>Skill dependency 條件</h2>
+<table><thead><tr><th>條件</th><th>用途</th></tr></thead><tbody>
+<tr><td><code>always</code></td><td>選到父 Skill 就載入。</td></tr>
+<tr><td><code>content-input</code></td><td>有文件／內容來源時才載入。</td></tr>
+<tr><td><code>reasoning-needed</code></td><td>需要較完整推理時才載入。</td></tr>
+<tr><td><code>verifier-required</code></td><td>Route Plan 安排 verifier 時才符合。</td></tr>
+<tr><td><code>high-risk</code></td><td>task risk 為 high / critical 時才符合。</td></tr>
+<tr><td><code>user-confirmed</code></td><td>必須停在 user-authority，讓使用者決定載入或略過。</td></tr>
+</tbody></table>
+</div>
+<div class="card">
+<h2>範例：PDF 教材 → 數位教案 → 題庫</h2>
+<div class="code">Node A：文件內容攝取
+Skill = document-to-markdown-ingestion
+        ↓ depends_on
+Node B：數位學習教案
+Primary Skill = digital-learning-lesson-plan
+Supporting dependency = lesson-plan-authoring (always)
+        ↓ depends_on
+Node C：試題命題
+Skill = item-authoring
+        ↓
+Final verification</div>
+<p><strong>注意：</strong>Node A → B → C 是 Route Plan 的工作依賴；「數位學習精進教案 → 教案撰寫」是 Skill dependency。兩者不是同一件事。</p>
+</div>
+<div class="callout"><strong>實作邊界：</strong>Registry 有 triggers / anti-triggers，但目前檢視到的 <code>classify.mjs</code> 主要記錄 profile signals；不能直接宣稱目前 runtime 已完整實作「自然語言 → trigger → 自動挑 Skill」。</div>
+</section>
+
+<section id="nooa" class="panel">
+<div class="card">
+<h2>eduHarness_Nooa：Cloud v0.3 / Registry v3</h2>
+<p>目前 active Distribution 為 <strong>2026.08.13-registry-v3</strong>、Architecture <strong>v0.3</strong>、channel <strong>stable</strong>。核心是 Descriptor-first、Provider-separated，以及 Official Registry + Local Registry 的雙層治理。</p>
+</div>
+<div class="grid2">
+<div class="card"><h3>Official 路徑</h3><div class="code">Official Registry
+→ pinned GitHub immutable snapshot
+→ canonical Skill path
+→ read full Skill
+→ execute</div></div>
+<div class="card"><h3>Local 路徑</h3><div class="code">Local Registry
+→ artifact://installation/...
+→ Artifact Index
+→ provider stable identity / revision
+→ Storage Provider</div></div>
+</div>
+<div class="card">
+<h2>權限與路由優先順序</h2>
+<div class="code">Project governance
+> Local explicit policy
+> Official Registry
+> Skill self-routing</div>
+<p>Official Registry 為 pinned GitHub snapshot；Local Registry 為 installation-owned overlay；兩者在 runtime 建立 ephemeral Effective Routing View，不形成第三個持久化 SSOT。</p>
+</div>
+<div class="callout"><strong>版本注意：</strong>README 中仍有 v0.2 / Registry v2 描述；較新的 active Distribution、Project Instructions 與 Official Registry 已推進到 v0.3 / Registry v3。</div>
+</section>
+
+<section id="compare" class="panel">
+<div class="card"><h2>差異比較</h2>
+<table><thead><tr><th>面向</th><th>基本 Harness</th><th>本機 Harness</th><th>eduHarness</th><th>eduHarness_Nooa</th></tr></thead><tbody>
+<tr><td>定位</td><td>通用 Agent 概念</td><td>本機治理／執行引擎</td><td>教育領域工作台</td><td>Cloud Canonical Distribution</td></tr>
+<tr><td>核心</td><td>Context / tools / state / control / verify</td><td>Blocks + Route Plan + preflight + authority</td><td>Brain + 17 Skills</td><td>Official + Local Registry</td></tr>
+<tr><td>路由</td><td>概念性</td><td>Route nodes / dependencies</td><td>Route Plan + Skill resolution</td><td>Effective Routing View</td></tr>
+<tr><td>技能</td><td>不一定有固定 Skill 模型</td><td>Registry 可解析 Skill</td><td>教育專用 Skill packages</td><td>Official + Local Skills</td></tr>
+<tr><td>儲存／Provider</td><td>實作依系統而定</td><td>本機 repository-relative</td><td>Brain / workspace</td><td>Descriptor → ENV → providers</td></tr>
+<tr><td>安全治理</td><td>Permissions / guardrails</td><td>User authority + verifier budget</td><td>教育流程人工審查</td><td>Human Gate + fail-closed + snapshot</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="evidence" class="panel">
+<div class="card"><h2>證據與判讀強度</h2>
+<table><thead><tr><th>結論</th><th>狀態</th></tr></thead><tbody>
+<tr><td>通用 Agent Harness 是模型外圍執行／治理層。</td><td><span class="status ok">✅ 外部文件一致</span></td></tr>
+<tr><td>本機 Harness 有 adaptive loop、Route Plan、Skill resolution、preflight、authority、verify / replan。</td><td><span class="status ok">✅ 原始碼／架構文件</span></td></tr>
+<tr><td>eduHarness- 以 Brain + 17 Skills 擴充 Harness。</td><td><span class="status ok">✅ README / Registry</span></td></tr>
+<tr><td>Route Plan 與 Skill resolution 分離。</td><td><span class="status ok">✅ architecture.md / route-plan.mjs</span></td></tr>
+<tr><td>目前 classify 不足以證明自然語言已直接使用 Registry trigger 自動選 Skill。</td><td><span class="status warn">⚠️ 實作邊界</span></td></tr>
+<tr><td>Nooa current canonical architecture 為 v0.3 / Registry v3 / stable。</td><td><span class="status ok">✅ Distribution manifest</span></td></tr>
+<tr><td>README v0.2 描述落後於較新的 v0.3 manifest。</td><td><span class="status warn">❗ 版本差異</span></td></tr>
+</tbody></table></div>
+<details open><summary>主要來源</summary>
+<ul class="sources">
+<li><a href="https://developers.cloudflare.com/agents/harnesses/">Cloudflare Agents Docs — Harnesses</a></li>
+<li><a href="https://www.cyber.gov.au/business-government/secure-design/artificial-intelligence/agentic-ai-harnesses">Australian Cyber Security Centre — Agentic AI harnesses</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/docs/architecture.md">eduHarness-/harness/docs/architecture.md</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/README.md">eduHarness-/README.md</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/config/skill-registry.json">harness/config/skill-registry.json</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/core/skills.mjs">harness/core/skills.mjs</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/core/planner.mjs">harness/core/planner.mjs</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/blocks/classify.mjs">harness/blocks/classify.mjs</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/blocks/route-plan.mjs">harness/blocks/route-plan.mjs</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/blocks/user-authority.mjs">harness/blocks/user-authority.mjs</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness-/blob/main/harness/blocks/dispatch.mjs">harness/blocks/dispatch.mjs</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness_Nooa/blob/main/00_EDUHARNESS_DISTRIBUTION.yaml">eduHarness_Nooa/00_EDUHARNESS_DISTRIBUTION.yaml</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness_Nooa/blob/main/00_PROJECT_INSTRUCTIONS.yaml">eduHarness_Nooa/00_PROJECT_INSTRUCTIONS.yaml</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness_Nooa/blob/main/00_ADMIN/00_EDU_SKILL_REGISTRY.yaml">Official Registry v3</a></li>
+<li><a href="https://github.com/bai-collab/eduHarness_Nooa/blob/main/docs/REGISTRY_V3_DUAL_LAYER_CONTRACT.md">REGISTRY_V3_DUAL_LAYER_CONTRACT.md</a></li>
+</ul>
+</details>
+<p class="small">AI 根據可追溯原始碼、規格與外部 Harness 文件整理。更新：2026-09-18。</p>
+</section>
+</main>
+</div>
+<script>
+(()=>{const b=[...document.querySelectorAll('.toolbar button')],p=[...document.querySelectorAll('.panel')];function show(id){b.forEach(x=>x.setAttribute('aria-selected',String(x.dataset.tab===id)));p.forEach(x=>x.classList.toggle('active',x.id===id));history.replaceState(null,'','#'+id)}b.forEach(x=>x.addEventListener('click',()=>show(x.dataset.tab)));const id=location.hash.slice(1);if(p.some(x=>x.id===id))show(id)})();
+</script>
+</body>
+</html>

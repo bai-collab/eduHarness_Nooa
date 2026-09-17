@@ -111,6 +111,7 @@ resources:
   bootstrap_descriptor: {type: installation_entry_resource, required: true}
   official_skills: {type: canonical_distribution_artifacts, source: "00_ADMIN/SKILLS", required: true, ownership: "official", loading: "on_demand"}
   curriculum_standards: {type: canonical_distribution_knowledge, source: "10_KNOWLEDGE_BASE/課綱_各領域", required: true, ownership: "official", loading: "on_demand-relevant-domain-only"}
+  ai_literacy: {type: canonical_distribution_knowledge, source: "10_KNOWLEDGE_BASE/AI素養", entry: "10_KNOWLEDGE_BASE/AI素養/README_AI素養知識庫.md", required: true, ownership: "official", loading: "on_demand-triggered"}
 
 bootstrap_contract:
   sequence:
@@ -200,6 +201,7 @@ verification:
     - "local_registry_installation_model"
     - "effective_routing_view_ephemeral"
     - "official_skill_installation_mirror_not_required"
+    - "canonical_ai_literacy_knowledge_readable"
     - "typed_relations_and_guard_contract_preserved"
     - "artifact_index_scoped_to_installation_owned_artifacts"
     - "human_gate_preserved"

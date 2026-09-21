@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="本機治理骨架的分層、資料夾功能與 Claude→Codex/agy 呼叫路由的一頁式視覺說明。">
+<style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>治理 Harness 全景圖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#F1F3F6; --surface:#FFFFFF; --surface-2:#E9ECF1; --raise:#FDFDFE;
+    --ink:#161B22; --ink-soft:#5A6472; --ink-faint:#8A93A2;
+    --line:#D6DBE3; --line-soft:#E6E9EF;
+    --claude:#C2410C; --claude-bg:#FBEADF; --claude-line:#F0C6AC;
+    --codex:#0F766E; --codex-bg:#D9EFEC; --codex-line:#A9D8D1;
+    --agy:#6D28D9; --agy-bg:#ECE3FB; --agy-line:#CFBBF3;
+    --user:#9A6B0E; --user-bg:#FBF0D5; --user-line:#EBD196;
+    --gov:#3F4A5C; --gov-bg:#E3E7EE;
+    --shadow:0 1px 2px rgba(20,27,34,.05),0 6px 18px rgba(20,27,34,.06);
+    --shadow-lift:0 2px 4px rgba(20,27,34,.06),0 14px 34px rgba(20,27,34,.10);
+    --r:14px; --r-sm:9px;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"Noto Sans TC",system-ui,-apple-system,"Microsoft JhengHei",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0C0F15; --surface:#151A22; --surface-2:#1D242F; --raise:#1A212B;
+    --ink:#E7EAF0; --ink-soft:#9AA4B2; --ink-faint:#6B7686;
+    --line:#2A3340; --line-soft:#212934;
+    --claude:#FB923C; --claude-bg:#33200F; --claude-line:#5A3A1E;
+    --codex:#2DD4BF; --codex-bg:#0E2E2B; --codex-line:#1C5049;
+    --agy:#A78BFA; --agy-bg:#241C40; --agy-line:#42356E;
+    --user:#FBBF24; --user-bg:#2E2506; --user-line:#5A4A14;
+    --gov:#AEB8C6; --gov-bg:#212934;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+    --shadow-lift:0 2px 4px rgba(0,0,0,.35),0 14px 34px rgba(0,0,0,.5);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0C0F15; --surface:#151A22; --surface-2:#1D242F; --raise:#1A212B;
+    --ink:#E7EAF0; --ink-soft:#9AA4B2; --ink-faint:#6B7686;
+    --line:#2A3340; --line-soft:#212934;
+    --claude:#FB923C; --claude-bg:#33200F; --claude-line:#5A3A1E;
+    --codex:#2DD4BF; --codex-bg:#0E2E2B; --codex-line:#1C5049;
+    --agy:#A78BFA; --agy-bg:#241C40; --agy-line:#42356E;
+    --user:#FBBF24; --user-bg:#2E2506; --user-line:#5A4A14;
+    --gov:#AEB8C6; --gov-bg:#212934;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+    --shadow-lift:0 2px 4px rgba(0,0,0,.35),0 14px 34px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.7;
+    -webkit-font-smoothing:antialiased;font-size:15px}
+  .wrap{max-width:1060px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
+  h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+  code,.mono{font-family:var(--mono)}
+  .mono{font-size:.86em}
+  p{margin:0}
+
+  /* ---- hero ---- */
+  header.hero{padding-block:52px 30px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:16px}
+  h1{font-weight:900;font-size:clamp(30px,6vw,52px);letter-spacing:-.02em}
+  .lede{margin-top:18px;font-size:clamp(16px,2.4vw,19px);color:var(--ink-soft);max-width:60ch}
+  .lede b{color:var(--ink);font-weight:700}
+
+  /* ---- legend ---- */
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+  .lg{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:100px;
+    font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--surface)}
+  .dot{width:11px;height:11px;border-radius:50%;flex:none}
+  .lg.claude{border-color:var(--claude-line);background:var(--claude-bg);color:var(--claude)}
+  .lg.codex{border-color:var(--codex-line);background:var(--codex-bg);color:var(--codex)}
+  .lg.agy{border-color:var(--agy-line);background:var(--agy-bg);color:var(--agy)}
+  .lg.user{border-color:var(--user-line);background:var(--user-bg);color:var(--user)}
+  .lg.claude .dot{background:var(--claude)} .lg.codex .dot{background:var(--codex)}
+  .lg.agy .dot{background:var(--agy)} .lg.user .dot{background:var(--user)}
+
+  /* ---- section ---- */
+  section{margin-top:56px}
+  .sec-h{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .sec-n{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink-faint)}
+  h2{font-weight:900;font-size:clamp(21px,3.4vw,28px);letter-spacing:-.01em}
+  .sec-sub{color:var(--ink-soft);margin:6px 0 24px;max-width:64ch}
+
+  /* ---- core idea split ---- */
+  .split{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;
+    border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+  .split .col{padding:24px 22px}
+  .split .col:first-child{background:var(--gov-bg)}
+  .col .tag{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+  .col h3{font-size:18px;font-weight:700;margin:8px 0 6px}
+  .col p{font-size:13.5px;color:var(--ink-soft)}
+  .vs{align-self:center;font-family:var(--mono);font-weight:600;color:var(--ink-faint);
+    padding:0 4px;border-inline:1px dashed var(--line);display:flex;align-items:center;font-size:13px}
+  .authority-bar{margin-top:14px;display:flex;align-items:center;gap:12px;padding:14px 18px;
+    border-radius:var(--r);background:var(--user-bg);border:1px solid var(--user-line);color:var(--user);font-weight:500;font-size:14px}
+  .authority-bar b{font-weight:900}
+  .crown{font-size:20px;flex:none}
+
+  /* ---- flow loop ---- */
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;
+    border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+    padding:18px 14px;box-shadow:var(--shadow);overflow-x:auto}
+  .step{flex:1 1 0;min-width:78px;text-align:center;padding:6px 4px;position:relative}
+  .step .k{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);display:block}
+  .step .d{font-size:11px;color:var(--ink-faint);margin-top:3px;line-height:1.4}
+  .step.opt .k{color:var(--ink-soft)}
+  .step.opt .k::after{content:"?";color:var(--agy);font-weight:700}
+  .step:not(:last-child)::after{content:"›";position:absolute;right:-6px;top:8px;
+    color:var(--ink-faint);font-weight:700;font-family:var(--mono)}
+  .step.gate .k{color:var(--user)}
+  .step.gate{background:var(--user-bg);border-radius:var(--r-sm)}
+  .flow-note{font-size:12.5px;color:var(--ink-faint);margin-top:10px;text-align:center}
+
+  /* ---- layer stack ---- */
+  .stack{display:flex;flex-direction:column;gap:10px}
+  .layer{display:grid;grid-template-columns:150px 1fr;gap:0;border:1px solid var(--line);
+    border-radius:var(--r);overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+  .layer .band{padding:16px 16px;display:flex;flex-direction:column;justify-content:center;gap:4px;
+    border-right:1px solid var(--line)}
+  .layer .band .ln{font-weight:900;font-size:15px}
+  .layer .band .lo{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+  .layer .body{padding:15px 18px}
+  .layer .body .fn{font-size:13.5px;color:var(--ink-soft);margin-bottom:10px}
+  .paths{display:flex;flex-wrap:wrap;gap:6px}
+  .pth{font-family:var(--mono);font-size:11.5px;padding:3px 9px;border-radius:6px;
+    background:var(--surface-2);color:var(--ink);border:1px solid var(--line-soft)}
+  /* layer accent by actor */
+  .layer.gov .band{background:var(--gov-bg);color:var(--gov)}
+  .layer.gov .band .lo{color:var(--gov)}
+  .layer.plan .band{background:var(--surface-2);color:var(--ink)}
+  .layer.plan .band .lo{color:var(--ink-faint)}
+  .layer.exec .band{background:var(--codex-bg);color:var(--codex)}
+  .layer.exec .band .lo{color:var(--codex)}
+  .layer.verify .band{background:var(--claude-bg);color:var(--claude)}
+  .layer.verify .band .lo{color:var(--claude)}
+  .layer.brain .band{background:var(--agy-bg);color:var(--agy)}
+  .layer.brain .band .lo{color:var(--agy)}
+  .layer.store .band{background:var(--user-bg);color:var(--user)}
+  .layer.store .band .lo{color:var(--user)}
+
+  /* ---- swimlanes (delegation) ---- */
+  .lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .lane{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+    box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .lane-h{padding:14px 16px;display:flex;flex-direction:column;gap:2px;border-bottom:2px solid}
+  .lane-h .who{font-weight:900;font-size:16px}
+  .lane-h .model{font-family:var(--mono);font-size:11px}
+  .lane.claude .lane-h{background:var(--claude-bg);border-color:var(--claude)} .lane.claude .who,.lane.claude .model{color:var(--claude)}
+  .lane.codex .lane-h{background:var(--codex-bg);border-color:var(--codex)} .lane.codex .who,.lane.codex .model{color:var(--codex)}
+  .lane.agy .lane-h{background:var(--agy-bg);border-color:var(--agy)} .lane.agy .who,.lane.agy .model{color:var(--agy)}
+  .lane-b{padding:15px 16px;display:flex;flex-direction:column;gap:11px;flex:1}
+  .lane-b .role{font-size:12px;color:var(--ink-faint);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+  .lane-b ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+  .lane-b li{font-size:13.5px;color:var(--ink-soft)}
+  .lane-b li b{color:var(--ink);font-weight:600}
+  .lane-foot{margin-top:auto;padding:11px 14px;font-size:12px;border-top:1px dashed var(--line);color:var(--ink-soft)}
+
+  /* delegation call chain */
+  .chain{border:1px solid var(--line);border-radius:var(--r);background:var(--raise);
+    padding:20px 20px;box-shadow:var(--shadow);margin-bottom:16px}
+  .chain ol{margin:0;padding:0;list-style:none;counter-reset:c;display:flex;flex-direction:column;gap:0}
+  .chain li{counter-increment:c;position:relative;padding:0 0 18px 44px}
+  .chain li:last-child{padding-bottom:0}
+  .chain li::before{content:counter(c);position:absolute;left:0;top:0;width:28px;height:28px;
+    border-radius:50%;background:var(--gov);color:var(--surface);display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-weight:600;font-size:13px}
+  .chain li:not(:last-child)::after{content:"";position:absolute;left:13px;top:30px;bottom:2px;width:2px;background:var(--line)}
+  .chain li.g::before{background:var(--user)}
+  .chain li .ch-t{font-weight:700;font-size:14.5px}
+  .chain li .ch-d{font-size:13px;color:var(--ink-soft);margin-top:2px}
+  .pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:100px;
+    font-weight:500;vertical-align:middle}
+  .pill.claude{background:var(--claude-bg);color:var(--claude);border:1px solid var(--claude-line)}
+  .pill.codex{background:var(--codex-bg);color:var(--codex);border:1px solid var(--codex-line)}
+  .pill.agy{background:var(--agy-bg);color:var(--agy);border:1px solid var(--agy-line)}
+  .pill.user{background:var(--user-bg);color:var(--user);border:1px solid var(--user-line)}
+
+  /* guardrails */
+  .rails{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+  .rail{border:1px solid var(--line);border-left:4px solid var(--claude);border-radius:var(--r-sm);
+    background:var(--surface);padding:15px 16px;box-shadow:var(--shadow)}
+  .rail.stop{border-left-color:var(--user)}
+  .rail.sec{border-left-color:var(--codex)}
+  .rail .rt{font-weight:700;font-size:14px;display:flex;gap:8px;align-items:center}
+  .rail .rd{font-size:13px;color:var(--ink-soft);margin-top:6px}
+  .ic{font-size:16px}
+
+  /* verifier table */
+  .vtable{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:var(--r);
+    overflow:hidden;font-size:13.5px;box-shadow:var(--shadow);background:var(--surface)}
+  .vtable th,.vtable td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  .vtable thead th{background:var(--surface-2);font-size:12px;letter-spacing:.04em;color:var(--ink-soft);font-weight:600}
+  .vtable tbody tr:last-child td{border-bottom:none}
+  .vtable td:first-child{font-weight:700;white-space:nowrap}
+  .vtable .mono{color:var(--ink-soft)}
+  .tblwrap{overflow-x:auto}
+
+  .invariant{margin-top:16px;padding:18px 20px;border-radius:var(--r);border:1px solid var(--claude-line);
+    background:var(--claude-bg);box-shadow:var(--shadow)}
+  .invariant .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--claude)}
+  .invariant .txt{font-weight:900;font-size:clamp(17px,2.6vw,22px);color:var(--claude);margin-top:6px;line-height:1.4}
+
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--ink-faint);font-family:var(--mono)}
+
+  @media (max-width:720px){
+    .split{grid-template-columns:1fr}
+    .split .vs{border-inline:none;border-block:1px dashed var(--line);padding:6px}
+    .lanes{grid-template-columns:1fr}
+    .layer{grid-template-columns:1fr}
+    .layer .band{border-right:none;border-bottom:1px solid var(--line);flex-direction:row;align-items:baseline;gap:10px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">Local Pluggable Harness · 本機治理骨架</div>
+    <h1>治理 Harness 全景圖</h1>
+    <p class="lede">一套只跑在本機的<b>可插拔治理骨架</b>：把「治理規則」和「執行環境」拆開。非瑣碎任務先畫一張 <b>Route Plan（路由計畫）</b>，標好每個節點誰做、用哪個模型、誰驗證，經<b>使用者核准</b>後才動工。主 session 的 Claude 負責思考與裁決，粗活派給 Codex，第三方獨立審查派給 agy。</p>
+
+    <div class="legend" aria-label="角色圖例">
+      <span class="lg user"><span class="dot"></span>使用者 · 最高權限</span>
+      <span class="lg claude"><span class="dot"></span>主 session Claude · Opus 4.8 high</span>
+      <span class="lg codex"><span class="dot"></span>Codex · gpt-5.6-luna max</span>
+      <span class="lg agy"><span class="dot"></span>agy · Antigravity/Gemini</span>
+    </div>
+  </header>
+
+  <!-- 1 · 核心原則 -->
+  <section>
+    <div class="sec-h"><span class="sec-n">01</span><h2>一句話原則：規則與執行分離</h2></div>
+    <p class="sec-sub">Harness 本身只是本機的 control plane（控制面）。它決定「怎麼跑、誰跑、要不要驗」，但不綁死任何一台機器、帳號或平台。</p>
+    <div class="split">
+      <div class="col">
+        <span class="tag">Governance · 治理規則</span>
+        <h3>規則怎麼寫</h3>
+        <p>生命週期、使用者權限、Route Plan 契約、驗證策略。全用 repository 相對路徑，可攜、可稽核。</p>
+      </div>
+      <div class="vs">分離</div>
+      <div class="col">
+        <span class="tag">Environment · 執行環境</span>
+        <h3>實際在哪跑</h3>
+        <p>主 Agent、rule-tool、Codex、Claude、Antigravity 等本機 adapter。缺了某個平台不會卡死整條流程，自動 fallback。</p>
+      </div>
+    </div>
+    <div class="authority-bar">
+      <span class="crown">♚</span>
+      <span><b>使用者裁決是最高權限。</b>模型只能提「建議（advisory）」，永遠不能覆蓋使用者的決定。核准 Route Plan＝授權開工。</span>
+    </div>
+  </section>
+
+  <!-- 2 · 流程迴圈 -->
+  <section>
+    <div class="sec-h"><span class="sec-n">02</span><h2>任務怎麼流動（Adaptive Loop）</h2></div>
+    <p class="sec-sub">每個任務依複雜度走這條可插拔管線。標 <b style="color:var(--agy)">?</b> 的是 optional 區塊，簡單任務可略過；<b style="color:var(--user)">金色</b>是必經的使用者授權閘門。</p>
+    <div class="flow">
+      <div class="step"><span class="k">classify</span><span class="d">分類複雜度</span></div>
+      <div class="step opt"><span class="k">context</span><span class="d">補上下文</span></div>
+      <div class="step opt"><span class="k">reason</span><span class="d">推理鷹架</span></div>
+      <div class="step"><span class="k">route-plan</span><span class="d">畫路由計畫</span></div>
+      <div class="step"><span class="k">preflight</span><span class="d">平台探測</span></div>
+      <div class="step gate"><span class="k">authority</span><span class="d">使用者核准</span></div>
+      <div class="step"><span class="k">dispatch</span><span class="d">分派</span></div>
+      <div class="step"><span class="k">execute</span><span class="d">執行</span></div>
+      <div class="step opt"><span class="k">reconcile</span><span class="d">彙整</span></div>
+      <div class="step"><span class="k">verify</span><span class="d">驗證</span></div>
+      <div class="step opt"><span class="k">replan</span><span class="d">重規劃</span></div>
+    </div>
+    <p class="flow-note">對映程式：11 個 <code>harness/blocks/*.mjs</code> 區塊 · 由 <code>harness/cli/harness.mjs</code> 驅動 · <code>classify / route-plan / preflight / authority / dispatch / execute / verify</code> 為必要區塊，其餘可插拔。</p>
+  </section>
+
+  <!-- 3 · 分層 × 資料夾 -->
+  <section>
+    <div class="sec-h"><span class="sec-n">03</span><h2>分層架構 × 對應資料夾</h2></div>
+    <p class="sec-sub">從上到下六層。每一層的顏色＝主要操作它的角色；右側是它住在哪些資料夾、負責什麼。</p>
+    <div class="stack">
+
+      <div class="layer gov">
+        <div class="band"><span class="ln">治理層</span><span class="lo">Governance</span></div>
+        <div class="body">
+          <p class="fn">工作規則的 SSOT（唯一真相）、模型分工路由、生命週期與使用者權限原則。這一層決定「規則長怎樣」。</p>
+          <div class="paths"><span class="pth">AGENTS.md</span><span class="pth">CLAUDE.md</span><span class="pth">README.md</span><span class="pth">harness/config/</span><span class="pth">harness/docs/</span></div>
+        </div>
+      </div>
+
+      <div class="layer plan">
+        <div class="band"><span class="ln">規劃層</span><span class="lo">Planning</span></div>
+        <div class="body">
+          <p class="fn">建立 Route Plan：節點、依賴、指定平台/模型、fallback、allowed paths、verifier mode；並對非主平台做無副作用 preflight。Skill 解析是旁路，不能改寫節點。</p>
+          <div class="paths"><span class="pth">harness/blocks/route-plan.mjs</span><span class="pth">platform-preflight.mjs</span><span class="pth">harness/core/planner.mjs</span><span class="pth">config/route-profiles.json</span><span class="pth">config/platform-registry.json</span></div>
+        </div>
+      </div>
+
+      <div class="layer exec">
+        <div class="band"><span class="ln">執行層</span><span class="lo">Execution</span></div>
+        <div class="body">
+          <p class="fn">dispatch 依 Route Plan 把節點交給本機 adapter。<b>機械層（同型重複粗工）</b>屬這裡：完整規格的重複工作走單一 executor，一次交清。缺 adapter 就 fallback 給主 Agent 或標 deferred。</p>
+          <div class="paths"><span class="pth">harness/blocks/dispatch.mjs</span><span class="pth">execute.mjs</span><span class="pth">harness/runtime/adapters/</span><span class="pth">codex.mjs</span><span class="pth">antigravity.mjs</span><span class="pth">rule-tool.mjs</span></div>
+        </div>
+      </div>
+
+      <div class="layer verify">
+        <div class="band"><span class="ln">驗證層</span><span class="lo">Verification</span></div>
+        <div class="body">
+          <p class="fn">依風險與複雜度節流驗證。獨立性三態 <code>disabled/preferred/required</code>。鐵律：<b>誰做的不由自己審</b>——executor 與 verifier 必須是可辨識的不同身分。</p>
+          <div class="paths"><span class="pth">harness/blocks/verify.mjs</span><span class="pth">harness/docs/independent-verification-adversarial-review.md</span></div>
+        </div>
+      </div>
+
+      <div class="layer brain">
+        <div class="band"><span class="ln">知識層</span><span class="lo">Brain</span></div>
+        <div class="body">
+          <p class="fn">可攜、審查過的知識與教訓。動工前先檢索（CONSULT-before-act），踩雷當下即回寫。已登錄 Skill package（27 個）也住這，經 Registry 投影到 <code>.claude</code> / <code>.agents</code>。</p>
+          <div class="paths"><span class="pth">brain/skills/</span><span class="pth">brain/knowledge/</span><span class="pth">brain/error-log/</span><span class="pth">brain/experience/</span><span class="pth">brain/instincts/</span><span class="pth">brain/index.json</span></div>
+        </div>
+      </div>
+
+      <div class="layer store">
+        <div class="band"><span class="ln">產物層</span><span class="lo">Artifacts</span></div>
+        <div class="body">
+          <p class="fn">任務計畫、SSOT 正本與匯出副本分家。判準：之後還會改→<code>projects/</code>；只是這次交付→<code>outputs/</code>；純暫存→<code>workspace/</code>。計畫完成經確認後移入 <code>planned/complete/</code>。</p>
+          <div class="paths"><span class="pth">planned/</span><span class="pth">planned/complete/</span><span class="pth">projects/</span><span class="pth">outputs/</span><span class="pth">workspace/</span><span class="pth">references/</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 4 · 三個執行者 -->
+  <section>
+    <div class="sec-h"><span class="sec-n">04</span><h2>三個執行者，各司其職</h2></div>
+    <p class="sec-sub">這是整套設計的重點：<b>不同模型家族</b>分開扛不同的活，才能互相審查、避免自己審自己。</p>
+    <div class="lanes">
+      <div class="lane claude">
+        <div class="lane-h"><span class="who">主 session Claude</span><span class="model">Opus 4.8 · high effort</span></div>
+        <div class="lane-b">
+          <span class="role">腦 · 思考與裁決</span>
+          <ul>
+            <li><b>計畫書</b>與架構設計</li>
+            <li>執行 <b>Skill</b>（如 AI 創作流程）</li>
+            <li><b>審查、整合、最終判斷</b></li>
+            <li>框定範圍、處理模糊、Plan 合成</li>
+          </ul>
+        </div>
+        <div class="lane-foot">框架、架構、模糊、整合永遠留在主 session。</div>
+      </div>
+
+      <div class="lane codex">
+        <div class="lane-h"><span class="who">Codex</span><span class="model">gpt-5.6-luna · CLI 預設 max</span></div>
+        <div class="lane-b">
+          <span class="role">手 · 動手粗工</span>
+          <ul>
+            <li><b>找資料、寫程式、搬移物件</b></li>
+            <li>完整規格的重複性實作</li>
+            <li>走 <code>codex:codex-rescue</code></li>
+            <li><b>不覆寫 model / effort</b>，吃 CLI 自己的預設</li>
+          </ul>
+        </div>
+        <div class="lane-foot">無自動記憶注入 → 尤其要靠 CONSULT-before-act 補課。</div>
+      </div>
+
+      <div class="lane agy">
+        <div class="lane-h"><span class="who">agy</span><span class="model">Antigravity / Gemini CLI</span></div>
+        <div class="lane-b">
+          <span class="role">眼 · 大脈絡與獨立審</span>
+          <ul>
+            <li><b>大 context 讀讀分析</b></li>
+            <li><b>獨立審查</b>（第三個模型家族）</li>
+            <li>當 Codex/Claude 之外的另一雙眼</li>
+            <li>本機目前僅 <b>advisory（建議）</b></li>
+          </ul>
+        </div>
+        <div class="lane-foot">提供跨家族視角以打破「自己審自己」的偏誤。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · 呼叫鏈 -->
+  <section>
+    <div class="sec-h"><span class="sec-n">05</span><h2>主 session 怎麼呼叫 Codex 與 agy</h2></div>
+    <p class="sec-sub">從收到任務到派工、驗證的完整流程。關鍵：授權是「核准整張 Route Plan」一次給足，不用每個節點再追問。</p>
+    <div class="chain">
+      <ol>
+        <li>
+          <div class="ch-t"><span class="pill claude">主 session</span> 收任務 → 分類 → 建 Route Plan</div>
+          <div class="ch-d">為<b>每個執行節點</b>寫死 owner + model：思考類留給自己，粗工標給 Codex，大脈絡分析/獨立審查標給 agy。</div>
+        </li>
+        <li class="g">
+          <div class="ch-t"><span class="pill user">使用者</span> 核准 Route Plan＝觸發授權</div>
+          <div class="ch-d">這一步滿足「不主動 spawn subagent」政策——使用者透過核准明確要求了。核准後 Codex/agy 節點不需逐一再問。</div>
+        </li>
+        <li>
+          <div class="ch-t"><span class="pill codex">Codex</span> 接粗工節點</div>
+          <div class="ch-d">主 session 以 <code>codex:codex-rescue</code> 呼叫，<b>不傳 model / effort</b>（舊版 helper 白名單無 <code>max</code>，靠 CLI 預設最穩）。長任務背景跑，取回結果由主 session 整合。</div>
+        </li>
+        <li>
+          <div class="ch-t"><span class="pill agy">agy</span> 接分析 / 獨立審查節點</div>
+          <div class="ch-d">大 context 通讀或當第三家族的獨立審查者。這台只能 advisory，結論回主 session 由使用者裁決。</div>
+        </li>
+        <li>
+          <div class="ch-t"><span class="pill claude">主 session</span> 整合 → 驗證 → 回報</div>
+          <div class="ch-d">驗證時 executor 與 verifier 必須是<b>不同身分/模型</b>。任何節點跑歪、範圍變動即標 <code>有問題</code> 停下。</div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="rails">
+      <div class="rail sec">
+        <div class="rt"><span class="ic">🔐</span>安全敏感節點</div>
+        <div class="rd">authn/authz、憑證/secrets、加密、輸入驗證、漏洞分析 <b>永不進 Codex</b>。執行後的審查交由主 session 指定、且<b>與執行者不同</b>的模型，杜絕自做自審。</div>
+      </div>
+      <div class="rail stop">
+        <div class="rt"><span class="ic">✋</span>停下問使用者</div>
+        <div class="rd">Codex/agy 節點若碰到<b>範圍變動</b>或<b>不可逆/外部變更</b>（push、發布、刪除、外部 mutation），一律停下問使用者，不自動衝。</div>
+      </div>
+      <div class="rail">
+        <div class="rt"><span class="ic">🧭</span>fallback 不擴權</div>
+        <div class="rd">指定平台不可用時預設由主 Agent 接手並記錄 requested / actual 差異；<b>不得</b>因 fallback 自動擴大 allowed paths 或任務範圍。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · 驗證預算 -->
+  <section>
+    <div class="sec-h"><span class="sec-n">06</span><h2>驗證要派多重？</h2></div>
+    <p class="sec-sub">驗證不是每個節點固定派一個，而是依 profile 節流；使用者明確指定的 mode 優先。</p>
+    <div class="tblwrap">
+      <table class="vtable">
+        <thead><tr><th>Profile</th><th>預設驗證</th><th>獨立性</th><th>節點 verifier 上限</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td>Simple</td><td class="mono">none</td><td class="mono">disabled</td><td class="mono">0</td><td>只做輕量 plan contract 檢查，不派獨立 verifier。</td></tr>
+          <tr><td>Standard</td><td class="mono">final</td><td class="mono">preferred</td><td class="mono">0</td><td>任務最後統一驗證一次；不同平台 verifier 優先，不可用可降級但須留 gap。</td></tr>
+          <tr><td>Complex</td><td class="mono">node-or-final</td><td class="mono">required</td><td class="mono">1</td><td>高風險/跨平台節點才派 node verifier；<code>required</code> 需可辨識的不同實際身分才過閘。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="invariant">
+      <div class="lbl">The Invariant · 不變式</div>
+      <div class="txt">「誰做的，不由自己審。」<br>審查者由主 session 指派，刻意選與執行者不同的模型——這是整套多執行者設計存在的理由。</div>
+    </div>
+  </section>
+
+  <footer>
+    F:\vibeCode.v.2026.8.2 · 規則 SSOT：AGENTS.md ／ 模型路由：CLAUDE.md · 內容取自 repository 現況（40 skills 登錄、11 blocks、6 platforms）
+  </footer>
+
+</div>
+</body>
+</html>
